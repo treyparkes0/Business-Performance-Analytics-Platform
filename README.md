@@ -1,4 +1,4 @@
-## Business Performance & Strategy Analytics Platform
+## Business Performance Analytics Platform
 
 This project compares six technology companies based on operating performance and is designed to support management review. It serves as a learning and practice tool for strengthening SQL querying skills, using Python and AI to extract and prepare financial data from SEC filings, and applying financial metrics to evaluate business performance. The project focuses on using data-driven analysis to identify trends, areas of management attention, and potential business recommendations.
 

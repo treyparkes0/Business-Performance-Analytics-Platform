@@ -81,6 +81,12 @@ def inject_css() -> None:
         @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap');
         html, body, [class*="css"] { font-family: "Source Sans 3", "Segoe UI", sans-serif; }
         .stApp { background: #F4F6F8; }
+        [data-testid="stMainBlockContainer"],
+        .block-container {
+            max-width: 100% !important;
+            padding-left: 1.25rem !important;
+            padding-right: 1.25rem !important;
+        }
         [data-testid="stSidebar"] {
             background: #15233A;
         }
@@ -89,6 +95,7 @@ def inject_css() -> None:
         [data-testid="stSidebar"] span,
         [data-testid="stSidebar"] .brand,
         [data-testid="stSidebar"] .brand-title { color: #E8EEF5 !important; }
+        [data-testid="stSidebar"] a { color: #9EC0E6 !important; }
         [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] > div {
             background-color: #243552 !important;
             color: #E8EEF5 !important;
@@ -128,14 +135,53 @@ def inject_css() -> None:
         [data-testid="stSidebarCollapsedControl"] button {
             color: #15233A !important;
         }
-        [data-testid="stSidebar"] button {
+        .nb-sidebar-btn {
+            display: block;
+            text-align: center;
+            background: #1E314C !important;
             color: #E8EEF5 !important;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none !important;
+            font-weight: 600;
+            border: 1px solid #2F4666;
+            margin-top: 0.15rem;
+        }
+        .nb-sidebar-btn:hover {
+            background: #25405F !important;
+            color: #FFFFFF !important;
+            border-color: #3D5A7A;
         }
         [data-testid="stSidebar"] [data-testid="stBaseButton-header"],
         [data-testid="stSidebar"] [data-testid="stBaseButton-headerNoPadding"] {
             background: #243552 !important;
             border: 1px solid #3A4D6A !important;
             border-radius: 6px !important;
+        }
+        [data-testid="stSidebar"] hr {
+            border-color: #3A4D6A !important;
+            margin: 1.1rem 0 0.85rem 0 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stDownloadButton"] button,
+        [data-testid="stSidebar"] [data-testid="stDownloadButton"] a,
+        [data-testid="stSidebar"] .stDownloadButton > button {
+            background: #243552 !important;
+            color: #E8EEF5 !important;
+            border: 1px solid #3A4D6A !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover,
+        [data-testid="stSidebar"] [data-testid="stDownloadButton"] a:hover,
+        [data-testid="stSidebar"] .stDownloadButton > button:hover {
+            background: #1F4E79 !important;
+            border-color: #9EC0E6 !important;
+            color: #FFFFFF !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stDownloadButton"] p,
+        [data-testid="stSidebar"] [data-testid="stDownloadButton"] span {
+            color: #E8EEF5 !important;
         }
         .brand { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
                  color: #A8B8CC; margin-bottom: 0.25rem; }
@@ -155,20 +201,22 @@ def inject_css() -> None:
         div[data-testid="stMetricLabel"],
         div[data-testid="stMetricLabel"] p {
             color: #5B6775 !important;
-            white-space: nowrap !important;
+            white-space: normal !important;
             overflow: visible !important;
             font-size: 0.8rem !important;
+            line-height: 1.25 !important;
         }
         div[data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) {
             display: flex !important;
-            flex-wrap: nowrap !important;
-            justify-content: center !important;
+            flex-wrap: wrap !important;
+            justify-content: flex-start !important;
             gap: 12px !important;
         }
         div[data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > div[data-testid="column"],
         div[data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > div[data-testid="stColumn"] {
-            flex: 1 1 0 !important;
-            min-width: 0 !important;
+            flex: 1 1 160px !important;
+            min-width: 140px !important;
+            max-width: 100% !important;
         }
         .section-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em;
                          text-transform: uppercase; color: #1F4E79; margin: 1.2rem 0 0.4rem 0; }
@@ -184,6 +232,63 @@ def inject_css() -> None:
         .tag-mixed { background: #E7EEF6; color: #1F4E79; }
         .tag-positive { background: #E4EFE8; color: #2C5A3C; }
         footer { visibility: hidden; }
+        .glossary-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #FFFFFF;
+            border: 1px solid #E2E6EC;
+            border-radius: 8px;
+            table-layout: auto;
+        }
+        .glossary-table th, .glossary-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #E2E6EC;
+            vertical-align: top;
+            color: #1A2332;
+            font-size: 0.92rem;
+            line-height: 1.4;
+        }
+        .glossary-table th {
+            text-align: left;
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #1F4E79 !important;
+            background: #F4F6F8;
+        }
+        .glossary-table tr:last-child td { border-bottom: none; }
+        .glossary-table .col-type {
+            width: 1%;
+            white-space: nowrap;
+        }
+        .glossary-table .col-metric {
+            width: 18%;
+            white-space: nowrap;
+        }
+        .glossary-table .col-calc { width: 81%; }
+        a.notebook-dl {
+            display: inline-block;
+            background: #1F4E79;
+            color: #FFFFFF !important;
+            padding: 8px 14px;
+            border-radius: 8px;
+            text-decoration: none !important;
+            font-weight: 600;
+            margin: 0 0 1.1rem 0;
+            border: 1px solid #1F4E79;
+        }
+        a.notebook-dl:hover {
+            background: #163A5C;
+            color: #FFFFFF !important;
+        }
+        [data-testid="stMainBlockContainer"] [data-testid="stDownloadButton"] button,
+        [data-testid="stMainBlockContainer"] .stDownloadButton > button {
+            background: #1F4E79 !important;
+            color: #FFFFFF !important;
+            border: 1px solid #1F4E79 !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,

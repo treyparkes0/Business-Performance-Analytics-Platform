@@ -508,8 +508,15 @@ def terms_frame(rows: list[dict[str, str | list[str]]]):
             {
                 "Metric": t["label"],
                 "Type": t["kind"],
-                "What it means": t["meaning"],
                 "How it is calculated": t["calculation"],
             }
         )
     return pd.DataFrame(records)
+
+
+def meanings_frame(rows: list[dict[str, str | list[str]]]):
+    import pandas as pd
+
+    return pd.DataFrame(
+        [{"Metric": t["label"], "What it means": t["meaning"]} for t in rows]
+    )

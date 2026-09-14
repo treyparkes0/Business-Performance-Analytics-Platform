@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import html
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+NOTEBOOK_FILE = ROOT / "Business Performance Analytics Platform Notebook 2026-09-11 14_34_26.ipynb"
 
 import pandas as pd
 import plotly.express as px
@@ -17,6 +20,7 @@ from src.bp_metrics import rank_selected_metric
 from src.data_source import load_views
 from src import glossary as glossary_notes
 from src import interpretations as notes
+from src.notebook_view import render_notebook
 from src.ui import (
     CHART_LAYOUT,
     PALETTE,
@@ -636,19 +640,39 @@ def glossary_page() -> None:
         st.info("No metrics match these filters.")
         return
 
-    if metric != "All metrics" and len(rows) == 1:
-        item = rows[0]
-        st.markdown(f"**{item['label']}**")
-        st.write(item["meaning"])
-        st.markdown(f"**Type:** {item['kind']}")
-        st.markdown(f"**How it is calculated:** {item['calculation']}")
-
-    st.dataframe(
-        glossary_notes.terms_frame(rows),
-        use_container_width=True,
-        hide_index=True,
-        height=min(720, 52 + 38 * max(len(rows), 4)),
+    glossary = pd.DataFrame(
+        [
+            {
+                "Metric": t["label"],
+                "Type": t["kind"],
+                "How it is calculated": t["calculation"],
+            }
+            for t in rows
+        ]
     )
+    body = []
+    for _, row in glossary.iterrows():
+        body.append(
+            "<tr>"
+            f"<td class='col-metric'>{html.escape(str(row['Metric']))}</td>"
+            f"<td class='col-type'>{html.escape(str(row['Type']))}</td>"
+            f"<td class='col-calc'>{html.escape(str(row['How it is calculated']))}</td>"
+            "</tr>"
+        )
+    st.markdown(
+        "<table class='glossary-table'><thead><tr>"
+        "<th class='col-metric'>Metric</th>"
+        "<th class='col-type'>Type</th>"
+        "<th class='col-calc'>How it is calculated</th>"
+        "</tr></thead><tbody>"
+        + "".join(body)
+        + "</tbody></table>",
+        unsafe_allow_html=True,
+    )
+    with st.expander("What it means", expanded=False):
+        for t in rows:
+            st.markdown(f"**{t['label']}**")
+            st.write(t["meaning"])
 
 
 def attention_page(company: str) -> None:
@@ -681,14 +705,49 @@ def attention_page(company: str) -> None:
         )
 
 
+def close_notebook() -> None:
+    st.session_state["open_notebook"] = False
+    if "open_notebook" in st.query_params:
+        del st.query_params["open_notebook"]
+
+
+def sidebar_notebook_button() -> None:
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(
+        '<a class="nb-sidebar-btn" href="?open_notebook=1" target="_self">DataBricks Notebook</a>',
+        unsafe_allow_html=True,
+    )
+    if st.query_params.get("open_notebook") == "1":
+        st.session_state["open_notebook"] = True
+
+
+def notebook_page() -> None:
+    st.title("Databricks notebook")
+    st.markdown(
+        '<p class="subtitle">The Databricks notebook opens here: markdown, SQL, and Python cells from the project.</p>',
+        unsafe_allow_html=True,
+    )
+    if NOTEBOOK_FILE.exists():
+        st.download_button(
+            "Download .ipynb",
+            data=NOTEBOOK_FILE.read_bytes(),
+            file_name=NOTEBOOK_FILE.name,
+            mime="application/x-ipynb+json",
+            key="download_notebook_page",
+        )
+    render_notebook(NOTEBOOK_FILE)
+
+
 def main() -> None:
     inject_css()
+    if st.query_params.get("open_notebook") == "1":
+        st.session_state["open_notebook"] = True
     st.sidebar.markdown('<div class="brand">Internal analytics</div>', unsafe_allow_html=True)
     st.sidebar.markdown(
         '<div class="brand-title">Business Performance Analytics</div>',
         unsafe_allow_html=True,
     )
-    page = st.sidebar.radio("Navigation", PAGES, index=0)
+    page = st.sidebar.radio("Navigation", PAGES, index=0, key="nav_radio", on_change=close_notebook)
 
     try:
         views = cached_views()
@@ -696,8 +755,15 @@ def main() -> None:
         st.error(str(exc))
         st.stop()
 
+    if st.session_state.get("open_notebook"):
+        st.sidebar.caption("Databricks notebook shown in the main panel.")
+        sidebar_notebook_button()
+        notebook_page()
+        return
+
     if page == "Glossary":
         st.sidebar.caption("Filter metrics on the glossary page. Company and year do not apply here.")
+        sidebar_notebook_button()
         glossary_page()
         return
 
@@ -712,7 +778,7 @@ def main() -> None:
         index=0,
     )
     st.sidebar.caption("Operating review of six technology companies. Not a trading or investment tool.")
-
+    sidebar_notebook_button()
     if page == "Overview":
         executive_page(views, company, year_label)
     elif page == "Company Performance":

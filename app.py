@@ -15,6 +15,7 @@ import streamlit as st
 
 from src.bp_metrics import rank_selected_metric
 from src.data_source import load_views
+from src import glossary as glossary_notes
 from src import interpretations as notes
 from src.ui import (
     CHART_LAYOUT,
@@ -46,6 +47,7 @@ PAGES = [
     "Financial Health",
     "Peer Benchmarking",
     "Management Attention",
+    "Glossary",
 ]
 
 KPI_GROUPS = {
@@ -607,6 +609,48 @@ def peer_page(views: dict[str, pd.DataFrame], company: str) -> None:
     st.caption("Companies are ranked on the selected metric only. There is no composite winner score.")
 
 
+def glossary_page() -> None:
+    st.title("Glossary")
+    st.markdown(
+        '<p class="subtitle">Meanings for columns used in the analytics views. '
+        "Calculated metrics show the same formulas as the app.</p>",
+        unsafe_allow_html=True,
+    )
+    view_options = ["All views"] + glossary_notes.APP_VIEWS
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        view = st.selectbox("View", view_options, index=0, key="glossary_view")
+    with f2:
+        kind = st.selectbox("Metric type", ["All", "Source", "Calculated"], index=0, key="glossary_kind")
+    scoped = glossary_notes.filter_terms(view=view, kind=kind)
+    labels = ["All metrics"] + glossary_notes.metric_labels(scoped)
+    if st.session_state.get("glossary_metric") not in labels:
+        st.session_state["glossary_metric"] = "All metrics"
+    with f3:
+        metric = st.selectbox("Metric", labels, key="glossary_metric")
+    search = st.text_input("Search", placeholder="Growth, margin, cash, rank…", key="glossary_search")
+
+    rows = glossary_notes.filter_terms(view=view, kind=kind, search=search, metric=metric)
+    st.caption(f"{len(rows)} metric{'s' if len(rows) != 1 else ''} match the filters.")
+    if not rows:
+        st.info("No metrics match these filters.")
+        return
+
+    if metric != "All metrics" and len(rows) == 1:
+        item = rows[0]
+        st.markdown(f"**{item['label']}**")
+        st.write(item["meaning"])
+        st.markdown(f"**Type:** {item['kind']}")
+        st.markdown(f"**How it is calculated:** {item['calculation']}")
+
+    st.dataframe(
+        glossary_notes.terms_frame(rows),
+        use_container_width=True,
+        hide_index=True,
+        height=min(720, 52 + 38 * max(len(rows), 4)),
+    )
+
+
 def attention_page(company: str) -> None:
     page_intro(
         "Management Attention",
@@ -651,6 +695,11 @@ def main() -> None:
     except FileNotFoundError as exc:
         st.error(str(exc))
         st.stop()
+
+    if page == "Glossary":
+        st.sidebar.caption("Filter metrics on the glossary page. Company and year do not apply here.")
+        glossary_page()
+        return
 
     companies = ["All Companies"] + sorted(
         views["company_performance"]["Company"].dropna().unique().tolist()

@@ -32,7 +32,7 @@ from src.ui import (
 )
 
 st.set_page_config(
-    page_title="Business Performance & Strategy Analytics",
+    page_title="Business Performance Analytics",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -641,7 +641,7 @@ def main() -> None:
     inject_css()
     st.sidebar.markdown('<div class="brand">Internal analytics</div>', unsafe_allow_html=True)
     st.sidebar.markdown(
-        '<div class="brand-title">Business Performance &amp; Strategy Analytics</div>',
+        '<div class="brand-title">Business Performance Analytics</div>',
         unsafe_allow_html=True,
     )
     page = st.sidebar.radio("Navigation", PAGES, index=0)

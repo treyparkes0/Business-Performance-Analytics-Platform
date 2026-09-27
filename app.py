@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-NOTEBOOK_FILE = ROOT / "Business Performance Analytics Platform Notebook 2026-09-11 14_34_26.ipynb"
+NOTEBOOK_FILE = ROOT / "Business Performance Analytics.ipynb"
 
 import pandas as pd
 import plotly.express as px

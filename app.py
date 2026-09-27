@@ -16,7 +16,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from src.bp_metrics import rank_selected_metric
 from src.data_source import load_views
 from src import glossary as glossary_notes
 from src import interpretations as notes
@@ -258,6 +257,42 @@ def kpi_value(frame: pd.DataFrame, col: str, kind: str) -> str:
     return fmt_ratio(value)
 
 
+FISCAL_YEAR_NOTE = (
+    "Microsoft, NVIDIA, and CrowdStrike report through FY2026. "
+    "AMD, Adobe, and Apple stop at FY2025. "
+    "FY2025 is the last year available for every company."
+)
+
+
+def overview_card_frame(frame: pd.DataFrame, year_label: str) -> pd.DataFrame:
+    """One row per company. All years uses each company's latest fiscal year."""
+    if year_label == "All":
+        return latest_year_rows(frame)
+    return frame
+
+
+def render_overview_kpis(frame: pd.DataFrame, labels: list[str], year_label: str) -> None:
+    cards = overview_card_frame(frame, year_label)
+    if cards.empty:
+        st.info("No rows for the current filters.")
+        return
+    if year_label == "All":
+        st.caption("Cards show each company's latest fiscal year. The table includes every fiscal year.")
+    elif year_label == "Latest":
+        st.caption("Each company's most recent fiscal year.")
+    else:
+        st.caption(f"FY{year_label}.")
+    for name in sorted(cards["Company"].dropna().unique()):
+        subset = cards.loc[cards["Company"] == name]
+        year = int(subset["Fiscal_Year"].max())
+        st.markdown(
+            f'<div class="company-kpi">{html.escape(str(name))} · FY{year}</div>',
+            unsafe_allow_html=True,
+        )
+        render_kpis(subset, labels)
+    st.caption(FISCAL_YEAR_NOTE)
+
+
 def render_kpis(frame: pd.DataFrame, labels: list[str]) -> None:
     catalog = {
         "Revenue Growth": ("Growth_Rate", "pct"),
@@ -293,15 +328,7 @@ def executive_page(views: dict[str, pd.DataFrame], company: str, year_label: str
     )
     category = st.selectbox("Metric category", list(KPI_GROUPS.keys()), index=0, key="metric_category")
     frame = kpi_source(views, company, year_label)
-    caption = (
-        "Each company's most recent fiscal year."
-        if company == "All Companies" and year_label == "Latest"
-        else "All fiscal years across companies."
-        if company == "All Companies" and year_label == "All"
-        else "Values update with the company and fiscal-year filters."
-    )
-    st.caption(caption)
-    render_kpis(frame, KPI_GROUPS[category])
+    render_overview_kpis(frame, KPI_GROUPS[category], year_label)
     table = overview_source(views, category, company, year_label)
     maybe_show_table(table, OVERVIEW_TABLES[category], company, year_label)
 
@@ -564,52 +591,80 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
     show_data_notes(notes.notes_for(notes.HEALTH, company), year_label)
 
 
-def rankable_peer_metrics(frame: pd.DataFrame, fiscal_year: int) -> dict:
-    subset = frame.loc[frame["Fiscal_Year"] == fiscal_year]
-    return {
-        label: spec
-        for label, spec in PEER_METRICS.items()
-        if spec[0] in subset.columns and subset[spec[0]].notna().any()
-    }
+def shared_fiscal_year(frame: pd.DataFrame) -> int:
+    """Last fiscal year present for every company. Falls back to the max year."""
+    counts = frame.groupby("Fiscal_Year")["Company"].nunique()
+    company_count = frame["Company"].nunique()
+    shared = counts[counts == company_count]
+    if not shared.empty:
+        return int(shared.index.max())
+    return int(frame["Fiscal_Year"].max())
 
 
-def peer_page(views: dict[str, pd.DataFrame], company: str) -> None:
+def rank_snapshot(frame: pd.DataFrame, metric: str, higher_is_better: bool) -> pd.DataFrame:
+    subset = frame.loc[:, ["Company", "Fiscal_Year", metric]].dropna(subset=[metric]).copy()
+    subset["Rank"] = subset[metric].rank(ascending=not higher_is_better, method="min")
+    return subset.sort_values(["Rank", "Company"]).reset_index(drop=True)
+
+
+def peer_snapshot(frame: pd.DataFrame, year_label: str) -> tuple[pd.DataFrame, str]:
+    if frame.empty:
+        return frame, ""
+    if year_label == "Latest":
+        return latest_year_rows(frame), "latest fiscal year"
+    if year_label == "All":
+        year = shared_fiscal_year(frame)
+        subset = frame.loc[frame["Fiscal_Year"] == year].copy()
+        return subset, f"FY{year}"
+    year = int(year_label)
+    return frame.loc[frame["Fiscal_Year"] == year].copy(), f"FY{year}"
+
+
+def peer_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> None:
     page_intro(
         "Peer Performance Benchmarking",
         "Compare companies against each other on a selected operating or financial metric.",
         "peer_metrics",
     )
     frame = views["peer_metrics"]
-    years = sorted(frame["Fiscal_Year"].dropna().unique().tolist(), reverse=True)
-    default_year = 2025 if 2025 in years else years[0]
-    c1, c2 = st.columns(2)
-    year = c1.selectbox("Fiscal year", years, index=years.index(default_year))
-    available = rankable_peer_metrics(frame, int(year))
-    if not available:
-        c2.selectbox("Metric", ["No rankable metrics"], disabled=True)
+    snapshot, year_text = peer_snapshot(frame, year_label)
+    if year_label == "All":
+        st.caption(
+            f"All years is not one peer set. Ranking {year_text}, "
+            "the last fiscal year available for every company."
+        )
+    elif year_label == "Latest":
+        st.caption(
+            "Latest uses each company's own fiscal year. "
+            + FISCAL_YEAR_NOTE
+        )
+    else:
+        st.caption(FISCAL_YEAR_NOTE)
+    if company != "All Companies":
+        st.caption(
+            "This page ranks the full peer set for the selected fiscal year. "
+            "The company filter applies on the other pages."
+        )
+    if snapshot.empty:
         st.info("No supporting data to rank companies for this fiscal year.")
         return
-    metric_label = c2.selectbox("Metric", list(available.keys()), key=f"peer_metric_{int(year)}")
-    companies = sorted(frame["Company"].unique().tolist())
-    st.markdown("**Companies**")
-    company_cols = st.columns(len(companies))
-    selected = [
-        name
-        for i, name in enumerate(companies)
-        if company_cols[i].checkbox(name, value=True, key=f"peer_company_{name}")
-    ]
-    if not selected:
-        st.info("Select at least one company.")
+    available = {
+        label: spec
+        for label, spec in PEER_METRICS.items()
+        if spec[0] in snapshot.columns and snapshot[spec[0]].notna().any()
+    }
+    if not available:
+        st.info("No supporting data to rank companies for this fiscal year.")
         return
+    metric_label = st.selectbox("Metric", list(available.keys()), key=f"peer_metric_{year_label}")
     col, higher_is_better, _pct = available[metric_label]
-    ranked = rank_selected_metric(frame, int(year), col, higher_is_better)
-    ranked = ranked.loc[ranked["Company"].isin(selected)]
+    ranked = rank_snapshot(snapshot, col, higher_is_better)
     if ranked.empty:
-        st.info("No supporting data to rank the selected companies on this metric.")
+        st.info("No supporting data to rank companies on this metric.")
         return
     show_table(ranked, ["Rank", "Company", "Fiscal_Year", col])
-    bar_chart(ranked, col, f"{metric_label} — FY{year}", percent=_pct)
-    show_data_notes(notes.PEER, year)
+    bar_chart(ranked, col, f"{metric_label} — {year_text}", percent=_pct)
+    show_data_notes(notes.PEER, year_label)
     st.caption("Companies are ranked on the selected metric only. There is no composite winner score.")
 
 
@@ -675,13 +730,17 @@ def glossary_page() -> None:
             st.write(t["meaning"])
 
 
-def attention_page(company: str) -> None:
+def attention_page(company: str, year_label: str) -> None:
     page_intro(
         "Management Attention",
         "Surface issues that would cause management to investigate, monitor, or ask a follow-up question. "
         "Favorable trends are noted for continued monitoring — they are not forced into problems.",
         "notebook interpretations",
     )
+    if str(year_label) not in {"All", "Latest", "2024", "2025", "2026"}:
+        st.caption("Management attention notes cover FY2024 through FY2026.")
+        return
+    st.caption("FY2024–FY2026. " + FISCAL_YEAR_NOTE)
     alerts = notes.alerts_for(company)
     if not alerts:
         st.info("No management-attention items are recorded for this company.")
@@ -714,7 +773,7 @@ def close_notebook() -> None:
 def sidebar_notebook_button() -> None:
     st.sidebar.markdown("---")
     st.sidebar.markdown(
-        '<a class="nb-sidebar-btn" href="?open_notebook=1" target="_self">DataBricks Notebook</a>',
+        '<a class="nb-sidebar-btn" href="?open_notebook=1" target="_self">Databricks Notebook</a>',
         unsafe_allow_html=True,
     )
     if st.query_params.get("open_notebook") == "1":
@@ -742,7 +801,6 @@ def main() -> None:
     inject_css()
     if st.query_params.get("open_notebook") == "1":
         st.session_state["open_notebook"] = True
-    st.sidebar.markdown('<div class="brand">Internal analytics</div>', unsafe_allow_html=True)
     st.sidebar.markdown(
         '<div class="brand-title">Business Performance Analytics</div>',
         unsafe_allow_html=True,
@@ -792,9 +850,9 @@ def main() -> None:
     elif page == "Financial Health":
         health_page(views, company, year_label)
     elif page == "Peer Benchmarking":
-        peer_page(views, company)
+        peer_page(views, company, year_label)
     else:
-        attention_page(company)
+        attention_page(company, year_label)
 
 
 if __name__ == "__main__":

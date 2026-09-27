@@ -220,6 +220,7 @@ def inject_css() -> None:
         }
         .section-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em;
                          text-transform: uppercase; color: #1F4E79; margin: 1.2rem 0 0.4rem 0; }
+        .company-kpi { font-size: 1rem; font-weight: 700; color: #15233A; margin: 1.15rem 0 0.35rem 0; }
         .interp { background: #FFFFFF; border-left: 3px solid #1F4E79; padding: 0.9rem 1.1rem;
                   border: 1px solid #E2E6EC; border-left-width: 3px; border-radius: 8px; color: #1A2332; }
         .alert { background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px;
@@ -304,7 +305,7 @@ def fmt_pct(value) -> str:
 def fmt_ratio(value) -> str:
     if value is None or pd.isna(value):
         return "—"
-    return f"{value:.2f}"
+    return f"{value:.3f}"
 
 
 def fmt_money(value) -> str:
@@ -339,7 +340,7 @@ def show_table(frame: pd.DataFrame, columns: list[str]) -> None:
         elif src in MONEY_COLS:
             fmt[label] = "{:,.0f}"
         elif src in RATIO_COLS:
-            fmt[label] = "{:.2f}"
+            fmt[label] = "{:.3f}"
         elif src == "Rank":
             fmt[label] = "{:.0f}"
     st.dataframe(show.style.format(fmt, na_rep="—"), use_container_width=True, hide_index=True)
@@ -417,14 +418,14 @@ def interpretation_box(title: str, text: str) -> None:
     st.markdown(f'<div class="interp">{text}</div>', unsafe_allow_html=True)
 
 
+INTERPRETATION_YEARS = {"All", "Latest", "2024", "2025", "2026"}
+
+
 def show_data_notes(text: str, year_label) -> None:
-    if year_label not in ("All", "Latest"):
-        try:
-            if int(year_label) < 2024:
-                return
-        except (TypeError, ValueError):
-            return
-    interpretation_box("What the data shows", text)
+    if str(year_label) not in INTERPRETATION_YEARS:
+        st.caption("The written read covers FY2024 through FY2026.")
+        return
+    interpretation_box("FY2024–FY2026", text)
 
 
 def page_intro(title: str, purpose: str, view_name: str) -> None:

@@ -1,20 +1,10 @@
-"""
-Retrieve analytics views for the app.
+"""Load the analytics views for the app.
 
-Databricks SQL views are the source of truth when a warehouse connection
-is configured. Local CSVs reproduce those views from
-company_financials_wide.csv otherwise.
+Reads the five warehouse views when DATABRICKS_SERVER_HOSTNAME,
+DATABRICKS_HTTP_PATH, and DATABRICKS_TOKEN are set. Otherwise builds
+them from data/processed/company_financials_wide.csv.
 
-Both paths return the same keys, column names, Company / Fiscal_Year
-casing, and dtypes. peer_metrics is the underlying values for every
-fiscal year. peer_benchmarking is the FY2025 rank table. performance is
-the full performance view. company_operations and company_cash_flow are
-the same column subsets of that view on both paths.
-
-Total_Liabilities_Imputed is computed inside the financial_health view
-from the long facts table, not inside this loader. A wide-table fill of
-AMD liabilities does not change the flag, and this loader does not infer
-one from assets minus equity.
+peer_metrics is put together here from those views. It is not a warehouse table.
 """
 
 from __future__ import annotations
@@ -52,7 +42,14 @@ def load_views() -> dict[str, pd.DataFrame]:
 
 
 def _connect_databricks():
-    from databricks import sql
+    try:
+        from databricks import sql
+    except ImportError as exc:
+        raise ImportError(
+            "Databricks credentials are set, but databricks-sql-connector is not installed. "
+            "Install that package to read the warehouse. The app runs from "
+            "data/processed/company_financials_wide.csv without it."
+        ) from exc
 
     return sql.connect(
         server_hostname=os.environ["DATABRICKS_SERVER_HOSTNAME"],

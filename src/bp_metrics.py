@@ -4,7 +4,7 @@ Analytics views for the local CSV path.
 Source table: data/processed/company_financials_wide.csv
 (same grain as financial_analytics.clean.company_financials).
 
-The Databricks view definitions in sql/ use the same formulas. Python
+The Databricks view definitions in the notebook use the same formulas. Python
 filters, ranks, and shapes the loader contract. It does not retune
 Fiscal_Year: that column is already the filing period end year.
 

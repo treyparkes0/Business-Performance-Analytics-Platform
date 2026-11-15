@@ -852,7 +852,11 @@ def attention_page(company: str, year_label: str) -> None:
     if str(year_label) not in {"All", "Latest", "2024", "2025", "2026"}:
         st.caption("Management attention notes cover FY2024 through FY2026.")
         return
-    st.caption("FY2024–FY2026. " + FISCAL_YEAR_NOTE)
+    st.caption(
+        "These notes cover FY2024 through FY2026 together. "
+        "Choosing one of those years does not hide the others. "
+        + FISCAL_YEAR_NOTE
+    )
     alerts = notes.alerts_for(company)
     if not alerts:
         st.info("No management-attention items are recorded for this company.")

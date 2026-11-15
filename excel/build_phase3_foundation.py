@@ -10,6 +10,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.page import PageMargins
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 OUT = Path(__file__).resolve().parent / "Business_Performance_Analysis.xlsx"
 
@@ -394,7 +395,7 @@ def build() -> Path:
             "Leave blanks blank. The ratios and ranks are already in the files. Do not put a warehouse login in this workbook.",
         ],
     )
-    _table(
+    row = _table(
         connections,
         row,
         ["Excel table", "Sheet", "File", "What it is"],
@@ -407,6 +408,28 @@ def build() -> Path:
             ["tblPeerMetrics", "src_PeerMetrics", "peer_metrics.csv", "Company-year metrics without ranks, 33 rows"],
         ],
     )
+    row = _section(connections, row, "CSV folder")
+    row = _lines(
+        connections,
+        row,
+        [
+            "Power Query reads the Folder cell below. On another computer, paste that machine's excel/source path, then Data, Refresh All.",
+        ],
+    )
+    header_row = row
+    value_row = header_row + 1
+    header_cell = connections.cell(header_row, 1, "Folder")
+    header_cell.font = HEADER_FONT
+    header_cell.fill = _fill(NAVY)
+    header_cell.alignment = LEFT
+    path_cell = connections.cell(value_row, 1, str((Path(__file__).resolve().parent / "source").resolve()))
+    path_cell.font = BODY_FONT
+    path_cell.alignment = Alignment(vertical="center", indent=1)
+    connections.row_dimensions[value_row].height = 22
+    connections.column_dimensions["A"].width = 78
+    folder_table = Table(displayName="tblSourceFolder", ref=f"A{header_row}:A{value_row}")
+    folder_table.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=False)
+    connections.add_table(folder_table)
 
     wb.properties.title = "Business Performance Analysis"
     wb.properties.subject = "Business performance analysis"

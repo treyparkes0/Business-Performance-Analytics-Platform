@@ -1,10 +1,8 @@
-# Excel data dictionary
+# Excel columns
 
-Phase 3, Task 1. This describes the frames the workbook will import. It does not add forecast formulas.
+The workbook imports six CSV files from `excel/source`. Those files hold the historical numbers. The forecast on Financial Forecast, and the working sheet Calc, are the only calculations Excel adds.
 
-Inspection basis: `main` at `70cc19e` (merge of pull request #2). SQL definitions are `sql/growth_trend.sql`, `sql/performance.sql`, `sql/financial_health.sql`, `sql/peer_benchmarking.sql`, and `sql/executive_summary.sql`. `peer_metrics` is not a SQL view. It is built in `src/bp_metrics.py` by `peer_metric_frame`, then attached in `assemble_views`.
-
-The profile was run with that code against `data/processed/company_financials_wide.csv`. The local test suite passed, 30 tests, because the untracked long extract is present in this folder. A clean clone still fails `test_clean_file_matches_wide_inputs`. Databricks warehouse credentials are not configured, so these frames were not re-queried from `financial_analytics.analytics`. The project documents that the Python copy matches the SQL views.
+`peer_metrics` is a join of the history views for the peer page. It is not its own SQL view. The other five files match `growth_trend`, `performance`, `financial_health`, `peer_benchmarking`, and `executive_summary`.
 
 ## Company identifiers
 
@@ -48,9 +46,9 @@ Columns only on `peer_benchmarking`, relative to `peer_metrics`: the nine rank c
 
 Dollar columns are US dollars, unscaled. Apple FY2025 revenue in the SEC check is 416,161,000,000. Do not divide by one million inside the import.
 
-Columns whose names end in `_pct`, plus `Growth_Rate`, `Prior_Growth_Rate`, `Growth_Differential`, `Operating_Income_Growth`, `Net_Income_Growth`, `Operating_Expense_Growth`, `Revenue_Growth_Minus_Opex_Growth`, `ROA`, `ROE`, `ROA_Ending`, `ROE_Ending`, `ROA_Avg`, `ROE_Avg`, `debt_to_equity_ratio`, and `Liabilities_to_Assets`, are decimal ratios rounded to 3 decimal places. `0.149` means 14.9 percent. They are not already multiplied by 100. A percent format may display them. Do not divide or multiply them again.
+Columns whose names end in `_pct`, plus `Growth_Rate`, `Prior_Growth_Rate`, `Growth_Differential`, `Operating_Income_Growth`, `Net_Income_Growth`, `Operating_Expense_Growth`, `Revenue_Growth_Minus_Opex_Growth`, `ROA`, `ROE`, `ROA_Ending`, `ROE_Ending`, `ROA_Avg`, `ROE_Avg`, and `Liabilities_to_Assets`, are decimal ratios rounded to 3 decimal places. `0.149` means 14.9 percent. They are not already multiplied by 100. A percent format may display them. Do not divide or multiply them again.
 
-`Current_ratio` and `Cash_Conversion_Ratio` are multiples rounded to 3 decimal places. Do not format them as percents. Cash conversion can be large or negative (CrowdStrike FY2025 is -90.659) and is paired with `Cash_Conversion_Meaningful`.
+`Current_ratio`, `debt_to_equity_ratio`, and `Cash_Conversion_Ratio` are multiples rounded to 3 decimal places. Show them as `0.000`, the same way the Streamlit app does. Do not format them as percents. Debt-to-equity of `0.167` is 0.167 dollars of debt per dollar of equity, not 16.7 percent. Cash conversion can be large or negative (CrowdStrike FY2025 is -90.659) and is paired with `Cash_Conversion_Meaningful`.
 
 Rank columns are integers. Tied values share the best rank and the next rank is skipped (`RANK()`, pandas `method="min"`). Missing values rank last and tie with each other. `Average_Rank` and `FY2025_Average_Rank` are the equal-weight mean of the nine ranks, rounded to 3 decimal places. A lower average is better.
 
@@ -69,7 +67,7 @@ These nulls are source or lag gaps. Leave them null.
 | Short-term debt not reported | CrowdStrike FY2021–FY2026 | The source field is null. `Total_Debt` equals long-term debt because the missing leg is treated as 0 | `Short_Term_Debt_Reported` is false. `Long_Term_Debt_Reported` is true on every row in this file |
 | Total liabilities not tagged | AMD FY2021–FY2025 | The wide CSV is null. The view fills `Total_Liabilities` with assets minus equity | `Total_Liabilities_Imputed` is true for those five AMD rows and false for every other company-year |
 
-`Total_Liabilities_Imputed` follows provenance, not the current wide-table null. SQL left-joins `financial_analytics.clean.sec_company_financials_clean` and flags AMD company-years with no `Metric = 'Total_Liabilities'` row. A reported fact is not imputed, even when the amount equals assets minus equity. The long extract is not committed. With that file absent, local Python treats a null wide value as the provenance and does not infer the flag from the accounting identity. The untracked local extract has 1,657 rows and no AMD `Total_Liabilities` fact, so supplying it flags the same five AMD years. Excel must import the flag. It must not impute again.
+`Total_Liabilities_Imputed` follows provenance, not the current wide-table null. SQL left-joins `financial_analytics.clean.sec_company_financials_clean` and flags AMD company-years with no `Metric = 'Total_Liabilities'` row. A reported fact is not imputed, even when the amount equals assets minus equity. The extract in this repository, `data/processed/sec_company_financials_clean.csv`, has 1,657 rows and no AMD `Total_Liabilities` fact, so those five AMD years stay flagged. Excel must import the flag. It must not impute again.
 
 `Cash_Conversion_Meaningful` is false when net income is zero or negative, or when the absolute unrounded operating-cash-flow / net-income ratio is greater than 5. A ratio of exactly 5 stays true. A null input would leave the flag null. In this file the flag is never null. It is false for all six CrowdStrike years:
 
@@ -162,7 +160,7 @@ Warehouse: `financial_analytics.analytics.financial_health`. One row per company
 | Total_Debt | USD | 0. Missing debt leg becomes 0 |
 | Short_Term_Debt_Reported | boolean | 0. False for CrowdStrike 2021–2026 only |
 | Long_Term_Debt_Reported | boolean | 0. True on every row |
-| debt_to_equity_ratio | ratio, 3 dp | 0 |
+| debt_to_equity_ratio | multiple, 3 dp | 0 |
 | Liabilities_to_Assets | ratio, 3 dp | 0 |
 | ROA_Ending | ratio, 3 dp | 0 |
 | ROE_Ending | ratio, 3 dp | 0 |
@@ -200,7 +198,7 @@ Lower is better, so rank 1 is the smallest value: `Operating_Expense_to_Revenue`
 | Operating_Cash_Flow_Margin_Rank | integer |
 | Current_ratio | multiple, 3 dp |
 | Current_Ratio_Rank | integer |
-| debt_to_equity_ratio | ratio, 3 dp |
+| debt_to_equity_ratio | multiple, 3 dp |
 | Debt_to_Equity_Rank | integer |
 | ROA | ratio, 3 dp. Primary return |
 | ROA_Rank | integer |
@@ -236,7 +234,7 @@ Warehouse: `financial_analytics.analytics.executive_summary`. Six rows, one per 
 | Free_Cash_Flow | USD | |
 | Free_Cash_Flow_Margin_pct | ratio, 3 dp | |
 | Current_ratio | multiple, 3 dp | |
-| debt_to_equity_ratio | ratio, 3 dp | |
+| debt_to_equity_ratio | multiple, 3 dp | |
 | Liabilities_to_Assets | ratio, 3 dp | |
 | ROA | ratio, 3 dp | Primary |
 | ROE | ratio, 3 dp | Primary |
@@ -277,23 +275,15 @@ Not a warehouse object. Python selects these columns from `growth_trend`, `perfo
 | Operating_Cash_Flow_Margin_pct | ratio, 3 dp | 0 | performance |
 | Gross_Margin_pct | ratio, 3 dp | 0 | performance |
 | Current_ratio | multiple, 3 dp | 0 | financial_health |
-| debt_to_equity_ratio | ratio, 3 dp | 0 | financial_health |
+| debt_to_equity_ratio | multiple, 3 dp | 0 | financial_health |
 | Liabilities_to_Assets | ratio, 3 dp | 0 | financial_health |
 | ROA | ratio, 3 dp | 0 | financial_health, primary |
 | ROE | ratio, 3 dp | 0 | financial_health, primary |
 
-## Import rules for the later tasks
+## Refresh
 
-- Query `financial_analytics.analytics.growth_trend`, `performance`, `financial_health`, `peer_benchmarking`, and `executive_summary` when a Databricks connection is available.
-- This machine has no Databricks credentials, so a CSV export of those five frames, plus `peer_metrics`, is the fallback until a warehouse connection exists. Generate that export from `main` at `70cc19e`.
-- Power Query table names reserved for the import task: `tblGrowthTrend`, `tblPerformance`, `tblFinancialHealth`, `tblPeerBenchmarking`, `tblExecutiveSummary`, `tblPeerMetrics`.
-- Keep `Company` and `Fiscal_Year` names and casing. Warehouse cursors may return different casing; the loader canonicalizes them. Excel should store the canonical names.
-- Preserve nulls. Do not replace blank cells with zero.
-- Preserve `Total_Liabilities_Imputed`, `Short_Term_Debt_Reported`, `Long_Term_Debt_Reported`, `Cash_Conversion_Meaningful`, `ROA_Uses_Ending_Balance`, and `ROE_Uses_Ending_Balance`.
-- Do not store credentials in the workbook. Do not commit `.env`.
+`excel/load_source_tables.py` rewrites the six CSVs. Power Query reads the folder in `tblSourceFolder` on Data Connections. If the workbook moves, paste the new `excel/source` path into that cell and use Data, Refresh All.
 
-## Checks already run
+Table names: `tblGrowthTrend`, `tblPerformance`, `tblFinancialHealth`, `tblPeerBenchmarking`, `tblExecutiveSummary`, `tblPeerMetrics`.
 
-`build_views()` on `main` returned the row counts, dtypes, null company-years, and flags in this dictionary. Calculated ratio columns that are null have zero exact-zero cells, so the nulls were not stored as zero. `peer_benchmarking` contains all six companies at FY2025 and no other year. NVIDIA FY2025 `Average_Rank` is 1.222.
-
-Not checked: a live `SELECT` against `financial_analytics.analytics`. The SQL files and `docs/sql_metrics.md` are the warehouse contract this profile follows.
+Leave blanks blank. Keep the flags: `Total_Liabilities_Imputed`, `Short_Term_Debt_Reported`, `Long_Term_Debt_Reported`, `Cash_Conversion_Meaningful`, `ROA_Uses_Ending_Balance`, and `ROE_Uses_Ending_Balance`. No warehouse login goes in the file.

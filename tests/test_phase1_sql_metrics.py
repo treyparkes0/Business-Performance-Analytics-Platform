@@ -3,8 +3,6 @@
 The Databricks definitions live in Business Performance Analytics.ipynb.
 src/bp_metrics.py repeats those formulas. These tests lock the copy:
 grain, fiscal-year gaps, known missing inputs, and the rounded ratios.
-
-Warehouse copies of the same checks are in tests/sql/phase1_identity_checks.sql.
 """
 
 from __future__ import annotations
@@ -65,7 +63,7 @@ class Phase1SqlMetricsTest(unittest.TestCase):
     def test_clean_file_matches_wide_inputs(self) -> None:
         self.assertTrue(
             CLEAN.exists(),
-            f"Missing {CLEAN}. The long SEC extract is not in the repository.",
+            f"Missing {CLEAN}. The AMD liabilities flag is read from this extract.",
         )
         clean = pd.read_csv(CLEAN)
         self.assertEqual(len(clean), 1657)

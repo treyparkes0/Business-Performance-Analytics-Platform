@@ -44,14 +44,9 @@ SKIP_TAXONOMIES = {"dei"}
 PROJECT_ROOT = Path(__file__).resolve().parent
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
-MARKET_DATA_DIR = PROJECT_ROOT / "data" / "market data"
-MARKET_PROCESSED_DIR = MARKET_DATA_DIR / "processed"
 RAW_CSV = RAW_DIR / "sec_company_financials_raw.csv"
 CLEAN_CSV = PROCESSED_DIR / "sec_company_financials_clean.csv"
 WIDE_CSV = PROCESSED_DIR / "company_financials_wide.csv"
-MARKET_RAW_CSV = MARKET_DATA_DIR / "sec_company_financials_raw.csv"
-MARKET_CLEAN_CSV = MARKET_DATA_DIR / "sec_company_financials_clean.csv"
-MARKET_WIDE_CSV = MARKET_PROCESSED_DIR / "company_financials_wide.csv"
 
 OUTPUT_COLUMNS = [
     "Company",
@@ -1066,16 +1061,10 @@ def main() -> int:
 
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    MARKET_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    MARKET_PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     destinations = [
         (raw_df, RAW_CSV),
         (clean_df, CLEAN_CSV),
-        (clean_df, RAW_DIR / "sec_company_financials_clean.csv"),
         (wide_df, WIDE_CSV),
-        (raw_df, MARKET_RAW_CSV),
-        (clean_df, MARKET_CLEAN_CSV),
-        (wide_df, MARKET_WIDE_CSV),
     ]
     for frame, path in destinations:
         frame.to_csv(path, index=False)

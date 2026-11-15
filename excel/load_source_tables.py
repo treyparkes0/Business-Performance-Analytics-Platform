@@ -63,6 +63,7 @@ DOLLAR_COLUMNS = {
 MULTIPLE_COLUMNS = {
     "Current_ratio",
     "Cash_Conversion_Ratio",
+    "debt_to_equity_ratio",
     "Average_Rank",
     "FY2025_Average_Rank",
 }
@@ -1060,7 +1061,7 @@ def apply_company_selector(workbook) -> None:
     ])
     row = _year_block(health, row, "Leverage", "tblFinancialHealth", [
         ("Total debt", "Total_Debt", "#,##0"),
-        ("Debt to equity", "debt_to_equity_ratio", "0.0%"),
+        ("Debt to equity", "debt_to_equity_ratio", "0.000"),
         ("Liabilities to assets", "Liabilities_to_Assets", "0.0%"),
         ("Liabilities imputed", "Total_Liabilities_Imputed", None),
         ("Short-term debt reported", "Short_Term_Debt_Reported", None),
@@ -1108,7 +1109,7 @@ def apply_company_selector(workbook) -> None:
         ]),
         ("Financial health", [
             ("Current ratio", "Current_ratio", "0.000"),
-            ("Debt to equity", "debt_to_equity_ratio", "0.0%"),
+            ("Debt to equity", "debt_to_equity_ratio", "0.000"),
             ("ROA", "ROA", "0.0%"),
             ("ROE", "ROE", "0.0%"),
             ("Liabilities imputed", "Total_Liabilities_Imputed", None),
@@ -1132,7 +1133,7 @@ def apply_company_selector(workbook) -> None:
         ("Expense to revenue", "Operating_Expense_to_Revenue", "0.0%"),
         ("Operating cash flow margin", "Operating_Cash_Flow_Margin_pct", "0.0%"),
         ("Current ratio", "Current_ratio", "0.000"),
-        ("Debt to equity", "debt_to_equity_ratio", "0.0%"),
+        ("Debt to equity", "debt_to_equity_ratio", "0.000"),
         ("ROA", "ROA", "0.0%"),
         ("ROE", "ROE", "0.0%"),
     ]
@@ -1177,12 +1178,15 @@ def _m_type(column: str) -> str:
     return "type number"
 
 
-def _query_formula(path: Path, columns: list[str]) -> str:
+def _query_formula(filename: str, columns: list[str]) -> str:
+    """Read one CSV from the folder stored in tblSourceFolder."""
     pairs = ", ".join(f'{{"{column}", {_m_type(column)}}}' for column in columns)
-    location = str(path.resolve())
     return (
         "let\n"
-        f'    Source = Csv.Document(File.Contents("{location}"), '
+        '    FolderTable = Excel.CurrentWorkbook(){[Name="tblSourceFolder"]}[Content],\n'
+        "    Folder = Text.Trim(Text.From(FolderTable{0}[Folder])),\n"
+        '    Sep = if Text.End(Folder, 1) = "\\" or Text.End(Folder, 1) = "/" then "" else "\\",\n'
+        f'    Source = Csv.Document(File.Contents(Folder & Sep & "{filename}"), '
         '[Delimiter=",", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),\n'
         "    Promoted = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),\n"
         "    CleanNames = Table.TransformColumnNames(Promoted, "
@@ -1257,7 +1261,7 @@ def attach_power_query(views: dict[str, pd.DataFrame]) -> None:
         }
         for key, filename, sheet_name, table_name, expected_rows in EXPORTS:
             frame = views[key]
-            formula = _query_formula(SOURCE_DIR / filename, list(frame.columns))
+            formula = _query_formula(filename, list(frame.columns))
             workbook.Queries.Add(key, formula)
             connection_string = (
                 "OLEDB;Provider=Microsoft.Mashup.OleDb.1;Data Source=$Workbook$;"

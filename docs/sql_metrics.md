@@ -1,12 +1,9 @@
 # SQL metrics
 
-The notebook views are the source of truth. `src/bp_metrics.py` repeats the same formulas for the app when Databricks credentials are not set. The Streamlit app does not calculate these columns itself.
+Formulas for the five views. The SQL is in `Business Performance Analytics.ipynb` and on the warehouse. The app reads those views when the Databricks settings are filled in. Otherwise it rebuilds them from `data/processed/company_financials_wide.csv`.
 
 Source table: `financial_analytics.clean.company_financials`  
 Local file: `data/processed/company_financials_wide.csv` (33 company-years, fiscal 2021 onward)
-
-Checked on the local copy with `python -m unittest tests.test_phase1_sql_metrics`.  
-The same checks for the warehouse are in `tests/sql/phase1_identity_checks.sql`.
 
 ## What is calculated in SQL
 
@@ -104,7 +101,7 @@ These are source gaps, not formula errors. Values were not filled in.
 | Short-term debt missing | CrowdStrike, FY2021–FY2026 | `Total_Debt` treats the missing leg as 0, so it equals long-term debt. `Short_Term_Debt_Reported` is false. A reported zero would stay reported |
 | Total liabilities not tagged | AMD, every year | No `Total_Liabilities` fact. The amount is Total_Assets − Total_Stockholders_Equity. `Total_Liabilities_Imputed` stays true even if the wide table was already filled |
 
-The notebook still runs `UPDATE ... SET Total_Liabilities = Total_Assets - Total_Stockholders_Equity` for AMD nulls so the wide table's dollar check can pass. The view does not use that null as the flag. It left-joins `sec_company_financials_clean` and flags AMD company-years with no `Metric = 'Total_Liabilities'` row. Local Python does the same when that extract is present. The wide CSV in this repository still has those AMD values null, and the long extract file is not committed, so the local path treats a null wide value as the provenance. It does not infer imputation from assets minus equity.
+The notebook still runs `UPDATE ... SET Total_Liabilities = Total_Assets - Total_Stockholders_Equity` for AMD nulls so the wide table's dollar check can pass. The view does not use that null as the flag. It left-joins `sec_company_financials_clean` and flags AMD company-years with no `Metric = 'Total_Liabilities'` row. Local Python does the same from `data/processed/sec_company_financials_clean.csv`. The wide CSV still has those AMD liability amounts null. The flag follows the missing fact. It does not infer imputation from assets minus equity.
 
 Accounting identities on the wide file, using the extractor tolerance (the larger of $1 million or 2%), produced no gross-profit or cash-rollforward warnings. Assets versus liabilities plus equity could not be checked for AMD until the derived liabilities were applied. After that fill, the identity holds.
 
@@ -124,13 +121,4 @@ Live Company Facts values matched the stored facts for:
 
 CrowdStrike revenue uses the tag that includes assessed tax because the excluding-tax tag is not in its facts. Capital expenditures are stored as positive SEC payments, and free cash flow subtracts them from operating cash flow.
 
-Copies under `data/raw/` and `data/market data/` match `data/processed/` byte for byte. The app and these tests read `data/processed/`.
-
-## Python copy versus the notebook
-
-Reviewed against the `CREATE OR REPLACE VIEW` cells in `Business Performance Analytics.ipynb`.
-
-- Growth, performance, health, the nine-metric FY2025 ranks, and the executive summary match `src/bp_metrics.py` and `sql/`.
-- Both paths round to 3 decimals and guard zero denominators.
-- View SQL uses `Company` and `Fiscal_Year`. The loader accepts either casing from a warehouse cursor and returns `Company` and `Fiscal_Year`.
-- The five views were not executed on a live Databricks warehouse in this audit. `tests/sql/phase1_identity_checks.sql` is the warehouse script. Local pytest checks the Python copy and that the notebook cells match `sql/`.
+The app and these tests read `data/processed/`. The notebook and `src/bp_metrics.py` both round to 3 decimals. The loader returns `Company` and `Fiscal_Year` even if a warehouse cursor uses different casing.

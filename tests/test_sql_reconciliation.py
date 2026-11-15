@@ -1,25 +1,47 @@
-"""Databricks view SQL matches the notebook. The view SQL is not executed here."""
+"""Notebook view SQL keeps the ranking, cash-conversion, and AMD rules."""
 
 import json
 
 from src.bp_metrics import ROOT
 
-SQL_DIR = ROOT / "sql"
-SQL_FILES = (
-    "growth_trend.sql",
-    "performance.sql",
-    "financial_health.sql",
-    "peer_benchmarking.sql",
-    "executive_summary.sql",
-)
 NOTEBOOK = ROOT / "Business Performance Analytics.ipynb"
+VIEW_NAMES = (
+    "growth_trend",
+    "performance",
+    "financial_health",
+    "peer_benchmarking",
+    "executive_summary",
+)
 
 
-def test_sql_documents_rank_and_threshold_rules():
-    peer_sql = (SQL_DIR / "peer_benchmarking.sql").read_text()
-    performance_sql = (SQL_DIR / "performance.sql").read_text()
-    health_sql = (SQL_DIR / "financial_health.sql").read_text()
-    summary_sql = (SQL_DIR / "executive_summary.sql").read_text()
+def notebook_views() -> dict[str, str]:
+    notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
+    found = {}
+    for cell in notebook["cells"]:
+        if cell.get("cell_type") != "code":
+            continue
+        source = "".join(cell.get("source", []))
+        if "CREATE OR REPLACE VIEW financial_analytics.analytics." not in source:
+            continue
+        body = source.split("%sql", 1)[-1].strip()
+        for name in VIEW_NAMES:
+            if f"CREATE OR REPLACE VIEW financial_analytics.analytics.{name} " in body or (
+                f"financial_analytics.analytics.{name} AS" in body
+            ):
+                found[name] = body
+    return found
+
+
+def test_notebook_has_the_five_views():
+    assert set(notebook_views()) == set(VIEW_NAMES)
+
+
+def test_notebook_sql_documents_rank_and_threshold_rules():
+    views = notebook_views()
+    peer_sql = views["peer_benchmarking"]
+    performance_sql = views["performance"]
+    health_sql = views["financial_health"]
+    summary_sql = views["executive_summary"]
     assert "NULLS LAST" in peer_sql
     assert "method='min'" in peer_sql
     assert "Operating_Expense_to_Revenue ASC NULLS LAST" in peer_sql
@@ -34,27 +56,8 @@ def test_sql_documents_rank_and_threshold_rules():
     assert "FY2025_Average_Rank" in summary_sql
 
 
-def test_notebook_sql_matches_files():
-    notebook = json.loads(NOTEBOOK.read_text())
-    found = set()
-    for cell in notebook["cells"]:
-        if cell.get("cell_type") != "code":
-            continue
-        source = "".join(cell.get("source", []))
-        if "CREATE OR REPLACE VIEW financial_analytics.analytics." not in source:
-            continue
-        body = source.split("%sql", 1)[-1].strip()
-        for name in SQL_FILES:
-            marker = name.removesuffix(".sql")
-            if f"CREATE OR REPLACE VIEW financial_analytics.analytics.{marker} " in body or (
-                f"financial_analytics.analytics.{marker} AS" in body
-            ):
-                expected = (SQL_DIR / name).read_text().strip()
-                assert body == expected, name
-                found.add(name)
-    assert found == set(SQL_FILES)
-
-
 def test_repo_does_not_use_duckdb():
     assert "duckdb" not in (ROOT / "requirements.txt").read_text().lower()
-    assert not (SQL_DIR / "duckdb").exists()
+    assert "duckdb" not in (ROOT / "app.py").read_text().lower()
+    for path in (ROOT / "src").glob("*.py"):
+        assert "duckdb" not in path.read_text(encoding="utf-8").lower()

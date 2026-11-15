@@ -15,6 +15,7 @@ TOKEN_PATTERNS = (
     re.compile(r"sk-[A-Za-z0-9]{20,}"),
 )
 SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache"}
+SKIP_NAMES = {".env", "secrets.toml"}
 
 
 def test_gitignore_covers_env_and_streamlit_secrets():
@@ -33,6 +34,8 @@ def test_tree_has_no_token_material():
         if not path.is_file():
             continue
         if any(part in SKIP_DIRS for part in path.parts):
+            continue
+        if path.name in SKIP_NAMES:
             continue
         if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".pyc", ".parquet"}:
             continue

@@ -1,21 +1,223 @@
-# Business Performance Analytics
+# Business Performance Analytics Platform
 
-Interactive review of operating performance for six technology companies: Microsoft, Apple, NVIDIA, Adobe, AMD, and CrowdStrike.
+Financial performance analysis of six publicly traded technology companies, built from annual SEC filings.
 
-This is an end-to-end business performance analytics project using real SEC financial data. It compares growth, profitability, operating efficiency, cash generation, and financial health for six technology companies, and records where management attention should go. The numbers come from annual filings, prepared in Python and calculated with SQL. It is not a trading tool, a valuation model, or an investment recommendation.
+The project compares growth, profitability, operating efficiency, cash generation, and financial health, then records where management attention should go. It is an operating review. It is not a trading tool, a valuation model, or an investment recommendation.
+
+Published app: [Business Performance Analytics](https://business-performance-analytics-platform-bus97yysmxxf9p6kixffdi.streamlit.app/)
+
+## Project overview
+
+Public-company filings contain the same statements every year, but the useful comparison is not a single ratio. Revenue can accelerate while margins ease. Earnings can rise while operating cash flow falls. A company can generate cash and still report an operating loss.
+
+This project turns SEC Company Facts into a repeatable review of those questions for Microsoft, Apple, NVIDIA, Adobe, AMD, and CrowdStrike. A management reader can see how each company's latest year changed, how the six compare on a shared fiscal year, and which result is worth investigating. The written findings stay with the numbers. They do not treat a possible explanation as a proven cause.
+
+## Business questions
+
+- How has each company's financial performance changed over the years in this extract?
+- Which companies show stronger profitability and operating-cash generation?
+- Are operating expenses growing faster or slower than revenue?
+- How do the companies compare when the comparison is locked to FY2025, the last year available for every company?
+- Which trends should management investigate, and which results do not establish a cause?
+
+## Companies and data coverage
+
+The extract contains 33 company-years, from each company's fiscal 2021 through its latest annual filing in the SEC Company Facts data used here.
+
+| Company | Ticker | Fiscal years | Latest year in this extract | Period end, from the revenue fact |
+|---|---|---|---|---|
+| Microsoft | MSFT | FY2021–FY2026 | FY2026 | June 30 |
+| Apple | AAPL | FY2021–FY2025 | FY2025 | Late September |
+| NVIDIA | NVDA | FY2021–FY2026 | FY2026 | Late January |
+| Adobe | ADBE | FY2021–FY2025 | FY2025 | Late November or early December |
+| AMD | AMD | FY2021–FY2025 | FY2025 | Late December |
+| CrowdStrike | CRWD | FY2021–FY2026 | FY2026 | January 31 |
+
+Two comparisons are kept separate.
+
+- **Latest fiscal year.** Overview cards, company reads, and management attention use each company's own most recent year. That year is FY2026 for Microsoft, NVIDIA, and CrowdStrike, and FY2025 for Apple, Adobe, and AMD.
+- **FY2025 peer benchmark.** Rankings use FY2025 only, because that is the last fiscal-year label present for all six companies. A FY2026 result is not placed in the same rank table as a FY2025 result.
+
+`Fiscal_Year` is the year of the period end. It is not a calendar year, and the six period ends do not fall on the same date.
+
+## Technical architecture
+
+```mermaid
+flowchart TD
+    A[SEC Company Facts API] --> B[Python extraction and preparation]
+    B --> C[Processed financial datasets]
+    C --> D[Databricks SQL analytical views]
+    D --> E[Python analytics]
+    C --> F[Local Python fallback]
+    F --> E
+    E --> G[Streamlit application]
+    G --> H[Management findings and recommendations]
+```
+
+`extract_sec_company_facts.py` calls the SEC Company Facts API and writes the raw extract, the clean long file, and the wide company-year file.
+
+The notebook defines five Databricks SQL views on the warehouse copies of those files. `src/bp_metrics.py` calculates the same views from the local wide file. `src/data_source.py` reads the warehouse when Databricks credentials are set. Otherwise it uses the local files. The Streamlit application uses that loader and does not recalculate the financial formulas itself.
+
+The formulas, null rules, and accepted gaps are in [docs/sql_metrics.md](docs/sql_metrics.md). Short metric notes are in [docs/validation_summary.md](docs/validation_summary.md).
+
+## Data preparation and validation
+
+The extractor requests one Company Facts payload per company from `https://data.sec.gov/api/xbrl/companyfacts/`. It keeps annual Form 10-K and 10-K/A facts from fiscal 2021 onward. Income and cash-flow facts must cover about a year, between 330 and 400 days. Balance-sheet facts are point-in-time. The preferred taxonomy is `us-gaap`.
+
+Duplicate facts collapse to one row per company, fiscal year, and metric. An original 10-K is kept ahead of a 10-K/A, `us-gaap` is preferred, and the latest filed date breaks a remaining tie. The clean file has 1,657 rows. All of them are Form 10-K and `us-gaap`.
+
+Each clean row keeps the company, ticker, CIK, statement, metric, SEC tag, fiscal year, period dates, filed date, form, accession number, unit, value, and source label.
+
+Missing values stay missing. They are not replaced with zero, except for one documented debt rule: total debt treats a missing short-term or long-term leg as zero and sets a reported flag so that treatment is visible. A reported zero stays zero.
+
+The important source gaps in this extract:
+
+- AMD and Microsoft have no `OperatingExpenses` fact for FY2021 and FY2022. Expense ratios and expense growth stay null for those years. FY2023 expense growth is also null, because the prior year is missing.
+- AMD has no `Total_Liabilities` fact in any year. Liabilities are assets minus stockholders' equity, and `Total_Liabilities_Imputed` stays true. The accounting identity is not treated as proof that a company reported the amount.
+- CrowdStrike does not report short-term debt for FY2021–FY2026. Total debt equals long-term debt, and `Short_Term_Debt_Reported` is false.
+- NVIDIA has no capital-expenditure fact for FY2021. Free cash flow is null for that year. It is not filled with zero.
+
+The extractor also checks gross profit and the cash roll-forward within the larger of $1 million or 2%. Assets versus liabilities plus equity can be checked for AMD only after the derived liabilities are applied. After that fill, the identity holds.
+
+## Financial metrics and methodology
+
+Detailed formulas are in [docs/sql_metrics.md](docs/sql_metrics.md). The short definitions below are the ones used in the application.
+
+**Growth.** Revenue growth is the change in revenue divided by prior-year revenue. The growth differential is this year's growth rate minus the prior year's rate. Both rates stay at full precision until the difference is rounded to 3 decimals.
+
+**Profitability.** Gross margin, operating margin, and net income margin are the corresponding profit figures divided by revenue.
+
+**Operating efficiency.** Operating-expense growth uses the same year-over-year form as revenue growth. Operating expense / revenue is the expense ratio. Revenue growth minus operating-expense growth uses the unrounded growth rates and rounds only the difference. It is a percentage-point gap, not another margin.
+
+**Cash generation.** The company reads use operating cash flow and the operating-cash-flow margin. Cash conversion is operating cash flow divided by net income. It is shown as `n/m` when net income is zero or negative, or when the absolute ratio is greater than 5. Free cash flow is operating cash flow minus capital expenditures and stays in the calculation layer. It is not a lead finding. Capital expenditures are stored as positive SEC payments.
+
+**Financial health.** The current ratio is current assets divided by current liabilities. Debt-to-equity is total debt divided by stockholders' equity. Liabilities-to-assets uses total liabilities, including AMD's imputed amount. Primary ROA and ROE use the average of the current and prior balance. FY2021 uses the ending balance because there is no prior year, and those rows are flagged. `ROA_Avg` and `ROE_Avg` are blank in FY2021.
+
+**Peer benchmarking.** FY2025 ranks nine metrics with equal weight. Higher is better for revenue growth, operating margin, net income margin, operating-cash-flow margin, current ratio, ROA, and ROE. Lower is better for operating expense / revenue and debt-to-equity. Ties share the best rank. Missing values rank last and tie with each other. `Average_Rank` is the mean of the nine ranks. A lower average is stronger on this set. It is a descriptive comparison. These companies are in different technology subsectors and do not share one business model.
+
+## Key findings
+
+Figures below are the rounded results used in the notebook company analysis.
+
+**Microsoft, FY2026.** Revenue growth accelerated to 17.8% from 14.9% in FY2025. Gross margin eased from 68.8% to 67.9%, while the operating margin rose from 45.6% to 46.8% and the operating-cash-flow margin rose from 48.3% to 55.1%. Operating cash flow grew 34.4%.
+
+**Apple, FY2025.** Revenue growth improved to 6.4% from 2.0% in FY2024. Net income grew 19.5%, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%. Cash conversion fell from 1.262 to 0.995. Operating-expense growth exceeded revenue growth by 1.7 percentage points. The current ratio was 0.893.
+
+**NVIDIA, FY2026.** Revenue growth decelerated to 65.5% from 114.2% in FY2025. Revenue was still growing. Gross margin fell from 75.0% to 71.1%. The operating margin was 60.4%, and the operating-cash-flow margin was 47.6%, with operating cash flow up 60.3%.
+
+**Adobe, FY2025.** Revenue growth was 10.5%, compared with 10.8% in FY2024. The operating margin rose from 31.3% to 36.6%, and the operating-cash-flow margin rose from 37.5% to 42.2%. Operating expenses fell from 57.7% of revenue to 52.6%. The current ratio fell from 1.068 to 0.996, and debt-to-equity rose from 0.399 to 0.534.
+
+**AMD, FY2025.** Revenue growth accelerated from 13.7% to 34.3%. The operating margin rose from 7.4% to 10.7%, and operating cash flow grew 153.5%. Average-balance ROA rose from 2.4% to 5.9%. Those returns are improved and still below the other profitable companies in this set. Liabilities-to-assets rose from 16.8% to 18.1%, using imputed liabilities.
+
+**CrowdStrike, FY2026.** Revenue growth slowed from 36.3% in FY2024 to 29.4% in FY2025 and 21.7% in FY2026. Revenue was still growing. The operating margin moved from -0.6% to -6.1%, and the net margin from 2.4% to -3.4%. Operating expenses reached 80.8% of revenue. Operating cash flow stayed positive, with a margin of 33.5%.
+
+On the FY2025 nine-metric average, NVIDIA was 1.222, Microsoft 3.111, AMD and Adobe 3.889, Apple 4.000, and CrowdStrike 4.889. Apple ranked 6th on FY2025 revenue growth and 1st on ROE. The ROE of 171.4% is inflated by buybacks, which shrink equity. Read it next to ROA.
+
+## Management implications
+
+Each company has one attention item. The financial signal says what changed. It does not prove why.
+
+- **Microsoft.** Gross margin eased while the operating margin and operating cash flow improved. The higher operating margin depends on a lower expense ratio, not on a higher gross margin. The question is what moved gross margin down, and whether the expense ratio is what offset it.
+- **Apple.** Earnings and leverage improved in the same year operating cash flow declined, and the current ratio stayed below 1. The question is the gap between net-income growth and operating cash flow.
+- **NVIDIA.** Growth cooled from an unusually high FY2025, and gross margin is lower, while operating profit and operating cash flow are still strong. The question is whether those margins hold if growth continues to cool. The results do not show that they will fall further.
+- **Adobe.** Profitability and operating cash flow improved while the current ratio slipped below 1 and leverage rose. A current ratio slightly below 1 is a liquidity signal, not by itself a crisis.
+- **AMD.** Growth, margins, cash generation, and returns improved. Liabilities-to-assets moved the other way from a low base, using assets minus equity. Operating profitability is still comparatively weaker.
+- **CrowdStrike.** Revenue is still growing and operating cash flow stayed positive. The operating loss widened because costs took a larger share of revenue. The results do not name those costs.
+
+## Application screenshots
+
+The screenshots are from the Streamlit application, using the processed SEC files.
+
+![Overview, with the cross-company read and latest-year cards](docs/overview.png)
+
+![Company Performance, with revenue-growth charts](docs/company_performance.png)
+
+![Profitability, with latest-year margin cards](docs/profitability.png)
+
+![Financial Health, with liquidity, leverage, and returns](docs/financial_health.png)
+
+![Peer Benchmarking, FY2025 revenue-growth ranks](docs/peer_benchmarking.png)
+
+![Management Attention, Microsoft and Apple](docs/management_attention.png)
+
+## Technologies
+
+- Python
+- SQL
+- Databricks SQL
+- Streamlit
+- Plotly, for the application charts
+- pandas
+- Excel, in the completed workbook at `excel/Business_Performance_Analysis.xlsx`
+- SEC Company Facts API
+
+## Repository structure
+
+```text
+extract_sec_company_facts.py          SEC extract, duplicate resolution, wide file, accounting checks
+Business Performance Analytics.ipynb  Databricks notebook: preparation, five SQL views, company analysis
+app.py                                Streamlit application
+src/bp_metrics.py                     Local calculations for the five analytical views
+src/data_source.py                    Databricks loader and local fallback
+src/interpretations.py                Company findings and management-attention notes
+src/glossary.py                       Metric definitions used in the application
+src/ui.py                             Tables, charts, and page formatting
+src/notebook_view.py                  Renders the notebook inside the application
+data/raw/                             Raw SEC extract
+data/processed/                       Clean long file and wide company-year file
+docs/sql_metrics.md                   View formulas and null rules
+docs/validation_summary.md            Short notes on returns, cash conversion, and data gaps
+docs/interview_preparation.md         Questions for explaining the project
+excel/Business_Performance_Analysis.xlsx
+tests/                                Metric, ranking, loader, and notebook checks
+```
+
+## Running the project
+
+Tested with Python 3.13.
+
+```bash
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
+```
+
+The application runs from the processed files when Databricks is not configured. Both of these files need to be present:
+
+- `data/processed/company_financials_wide.csv`
+- `data/processed/sec_company_financials_clean.csv`
+
+The wide file is the calculation source. The clean file is how AMD's liability flag is tied to a missing fact rather than to the accounting identity.
+
+To read the warehouse views instead, set these three environment variables. They can live in a local `.env` file, which is gitignored.
+
+- `DATABRICKS_SERVER_HOSTNAME`
+- `DATABRICKS_HTTP_PATH`
+- `DATABRICKS_TOKEN`
+
+If any of the three is missing or blank, the application builds the views locally and does not connect to Databricks. The local views and the warehouse views use the same formulas. The warehouse path reads views that have already been created in Databricks. Creating or replacing those views is done from `Business Performance Analytics.ipynb`, not from the application.
+
+Refresh the SEC files with:
+
+```bash
+python extract_sec_company_facts.py
+```
+
+The script sends a User-Agent that includes the contact name and email required by the SEC. Confirm those values in `extract_sec_company_facts.py` before running it.
+
+Run the checks with:
+
+```bash
+python -m pytest
+```
+
+## Limitations
+
+- The companies do not share a fiscal calendar. FY2025 is a common label, not a common set of months. NVIDIA and CrowdStrike end in January. Microsoft ends in June. Apple ends in September. Adobe and AMD end near the calendar year, on 52/53-week dates.
+- SEC tags differ. CrowdStrike revenue uses the tag that includes assessed tax because the excluding-tax tag is not in its facts. NVIDIA's revenue tag is not the same tag in every year. The extractor's tag order records which tag was selected.
+- Operating expenses, AMD total liabilities, CrowdStrike short-term debt, and NVIDIA FY2021 capital expenditures are missing in the ways described above. Imputed AMD liabilities are flagged.
+- Peer ranks describe this metric set. They do not decide which company is the better business, and the companies operate in different technology subsectors.
+- The review is historical. It does not forecast revenue, margins, or cash flow.
+
+## AI-assisted development disclosure
 
 AI-assisted development tools were used to support coding, debugging, and documentation. Project direction, analytical scope, metric selection, data validation, and interpretation were reviewed and guided throughout development.
-
-Open the app: [Business Performance Analytics](https://business-performance-analytics-platform-bus97yysmxxf9p6kixffdi.streamlit.app/)
-
-## Source
-
-Annual Form 10-K facts from the [SEC Company Facts API](https://data.sec.gov/api/xbrl/companyfacts/), fiscal years 2021 onward. Each company keeps its own fiscal year. Microsoft, NVIDIA, and CrowdStrike report through FY2026. AMD, Adobe, and Apple stop at FY2025. FY2025 is the last year available for every company.
-
-The metrics are defined in `Business Performance Analytics.ipynb` and repeated in `src/bp_metrics.py`. The Streamlit app reads the warehouse views when the three Databricks settings are set. Otherwise it builds them from `data/processed/company_financials_wide.csv`. Formulas, null rules, and accepted data gaps are in [docs/sql_metrics.md](docs/sql_metrics.md).
-
-## Overview
-
-![Business Performance Overview](docs/overview.png)
-
-The picture is Overview for all six companies. Each company has its own row, and every number on that row is visible. The year on the row is that company's latest fiscal year.

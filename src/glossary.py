@@ -618,26 +618,3 @@ def filter_terms(
 def metric_labels(rows: list[dict[str, str | list[str]]] | None = None) -> list[str]:
     source = rows if rows is not None else TERMS
     return sorted({str(t["label"]) for t in source})
-
-
-def terms_frame(rows: list[dict[str, str | list[str]]]):
-    import pandas as pd
-
-    records = []
-    for t in rows:
-        records.append(
-            {
-                "Metric": t["label"],
-                "Type": t["kind"],
-                "How it is calculated": t["calculation"],
-            }
-        )
-    return pd.DataFrame(records)
-
-
-def meanings_frame(rows: list[dict[str, str | list[str]]]):
-    import pandas as pd
-
-    return pd.DataFrame(
-        [{"Metric": t["label"], "What it means": t["meaning"]} for t in rows]
-    )

@@ -29,6 +29,7 @@ from src.notebook_view import render_notebook
 from src.ui import (
     CHART_LAYOUT,
     PALETTE,
+    as_visible_html,
     bar_chart,
     fmt_money,
     fmt_pct,
@@ -937,16 +938,16 @@ def attention_page(company: str, year_label: str) -> None:
         st.markdown(
             f"""
             <div class="alert">
-              <div><strong>{alert["company"]} — {alert["area"]}</strong>
-              <span class="tag tag-{tag}">{tag}</span></div>
+              <div><strong>{html.escape(alert["company"])} — {html.escape(alert["area"])}</strong>
+              <span class="tag tag-{html.escape(tag)}">{html.escape(tag)}</span></div>
               <p class="alert-k">Signal</p>
-              <p>{alert["signal"]}</p>
+              <p>{as_visible_html(alert["signal"])}</p>
               <p class="alert-k">Why it matters</p>
-              <p>{alert["why"]}</p>
+              <p>{as_visible_html(alert["why"])}</p>
               <p class="alert-k">Trend</p>
-              <p>{alert["trend"]}</p>
+              <p>{as_visible_html(alert["trend"])}</p>
               <p class="alert-k">Management attention</p>
-              <p>{alert["attention"]}</p>
+              <p>{as_visible_html(alert["attention"])}</p>
             </div>
             """,
             unsafe_allow_html=True,

@@ -5,6 +5,7 @@ import pandas as pd
 from app import KPI_GROUPS, LEAD_LABELS
 from src.bp_metrics import financial_health, performance
 from src.interpretations import ALERTS
+from src.ui import as_visible_html
 
 
 def _frame():
@@ -154,3 +155,10 @@ def test_fcf_is_not_a_lead_kpi_and_each_company_has_one_alert():
         assert alert["trend"]
         assert alert["attention"]
         assert "continue monitoring financial performance" not in alert["attention"].lower()
+
+
+def test_dollar_amounts_are_not_markdown_math():
+    visible = as_visible_html("from $93.7 billion to $112.0 billion")
+    assert "$" not in visible
+    assert "&#36;93.7 billion" in visible
+    assert "&#36;112.0 billion" in visible

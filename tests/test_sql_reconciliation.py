@@ -60,6 +60,65 @@ def test_notebook_sql_documents_rank_and_threshold_rules():
     assert "gt.Growth_Rate -" not in performance_sql
 
 
+def test_final_peer_query_saved_the_warehouse_result():
+    notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
+    matches = []
+    for cell in notebook["cells"]:
+        if cell.get("cell_type") != "code":
+            continue
+        source = "".join(cell.get("source", []))
+        if "SELECT *" in source and "financial_analytics.analytics.peer_benchmarking" in source:
+            matches.append(cell)
+    assert len(matches) == 1
+    outputs = matches[0].get("outputs") or []
+    assert outputs, "The FY2025 peer query has no saved output."
+    table = outputs[0]["metadata"]["application/vnd.databricks.v1+output"]
+    names = [column["name"] for column in table["schema"]]
+    rows = table["data"]
+    assert len(rows) == 6
+    company = names.index("Company")
+    year = names.index("Fiscal_Year")
+    average = names.index("Average_Rank")
+    recorded = {
+        row[company]: (int(row[year]), str(row[average]))
+        for row in rows
+    }
+    assert recorded == {
+        "NVIDIA": (2025, "1.222"),
+        "Microsoft": (2025, "3.111"),
+        "AMD": (2025, "3.889"),
+        "Adobe": (2025, "3.889"),
+        "Apple": (2025, "4.000"),
+        "CrowdStrike": (2025, "4.889"),
+    }
+
+
+def test_notebook_structure_has_no_error_outputs():
+    notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
+    text = "\n".join(
+        "".join(cell.get("source", [])) if isinstance(cell.get("source"), list) else str(cell.get("source", ""))
+        for cell in notebook["cells"]
+    )
+    for heading in (
+        "# Business Performance Analytics",
+        "## Data Preparation & Quality",
+        "## SQL views",
+        "## Peer Benchmarking",
+        "### Microsoft — FY2026",
+        "### Apple — FY2025",
+        "### NVIDIA — FY2026",
+        "### Adobe — FY2025",
+        "### AMD — FY2025",
+        "### CrowdStrike — FY2026",
+        "## Management suggestions",
+        "## Conclusion",
+    ):
+        assert heading in text
+    for cell in notebook["cells"]:
+        for output in cell.get("outputs", []):
+            assert output.get("output_type") != "error"
+
+
 def test_repo_does_not_use_duckdb():
     assert "duckdb" not in (ROOT / "requirements.txt").read_text().lower()
     assert "duckdb" not in (ROOT / "app.py").read_text().lower()

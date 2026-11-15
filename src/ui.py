@@ -433,9 +433,14 @@ def metric_chart(frame: pd.DataFrame, y: str, title: str, percent: bool = False,
     bar_chart(frame, y, f"{cleaned} — {suffix}", percent=percent)
 
 
+def as_visible_html(text: str) -> str:
+    """Keep literal dollar amounts. Streamlit markdown treats $...$ as math."""
+    return text.replace("$", "&#36;")
+
+
 def interpretation_box(title: str, text: str) -> None:
     st.markdown(f'<div class="section-label">{title}</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="interp">{text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="interp">{as_visible_html(text)}</div>', unsafe_allow_html=True)
 
 
 INTERPRETATION_YEARS = {"All", "Latest", "2024", "2025", "2026"}

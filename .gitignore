@@ -4,5 +4,9 @@ __pycache__/
 *.pyc
 .python-version
 .pytest_cache/
+.ipynb_checkpoints/
+*.log
+Thumbs.db
+.DS_Store
 secrets.toml
 .streamlit/secrets.toml

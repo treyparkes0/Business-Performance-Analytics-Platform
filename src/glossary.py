@@ -315,7 +315,7 @@ TERMS: list[dict[str, str | list[str]]] = [
         "Whether revenue is growing faster than operating costs. Positive means sales are outpacing opex growth.",
         CALCULATED,
         [VIEW_OVERVIEW, VIEW_OPERATIONS],
-        f"Revenue Growth − Operating Expense Growth (opex growth is used before rounding). {ROUND}",
+        f"Unrounded revenue growth − unrounded operating-expense growth. Only the difference is rounded. {ROUND}",
     ),
     _term(
         "Operating_Cash_Flow_Margin_pct",

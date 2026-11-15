@@ -24,7 +24,7 @@ Each ratio is rounded to 3 decimals after the subtraction, not before.
 
 ### `financial_analytics.analytics.performance`
 
-One row per company-year. Joins `growth_trend` for the already rounded growth rate and net income margin.
+One row per company-year. Joins `growth_trend` for the rounded growth rate and net income margin. The efficiency gap does not use that rounded growth rate.
 
 | Column | Formula | Null when |
 |---|---|---|
@@ -34,7 +34,7 @@ One row per company-year. Joins `growth_trend` for the already rounded growth ra
 | Net_Income_Growth | (Net_Income − prior) / prior | First year, or prior is 0 |
 | Operating_Expense_Growth | (Operating_Expenses − prior) / prior | Either year is missing, or prior is 0 |
 | Operating_Expense_to_Revenue | Operating_Expenses / Revenue | Operating expenses missing, or revenue is 0 |
-| Revenue_Growth_Minus_Opex_Growth | Rounded Growth_Rate − unrounded operating-expense growth, then rounded | Either input is null |
+| Revenue_Growth_Minus_Opex_Growth | Unrounded revenue growth − unrounded operating-expense growth, then rounded | Either input is null |
 | Operating_Cash_Flow_Margin_pct | Operating cash flow / Revenue | Revenue is 0 |
 | Operating_Cash_Flow_Growth | (Operating cash flow − prior) / prior | First year, or prior is 0 |
 | Cash_Conversion_Ratio | Operating cash flow / Net_Income, raw ratio, rounded to 3 decimals | Net income is 0 |
@@ -42,7 +42,7 @@ One row per company-year. Joins `growth_trend` for the already rounded growth ra
 | Free_Cash_Flow | Operating cash flow − Capital_Expenditures | Capital expenditures missing |
 | Free_Cash_Flow_Margin_pct | Free_Cash_Flow / Revenue | Free cash flow is null, or revenue is 0 |
 
-`Revenue_Growth_Minus_Opex_Growth` subtracts the unrounded expense growth from the rounded revenue growth. The Python copy does the same.
+`Revenue_Growth_Minus_Opex_Growth` keeps both growth rates at full precision and rounds only the difference. The Python copy does the same.
 
 ### `financial_analytics.analytics.financial_health`
 

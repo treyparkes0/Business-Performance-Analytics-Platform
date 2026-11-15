@@ -174,7 +174,7 @@ class Phase1SqlMetricsTest(unittest.TestCase):
             ),
             opex_growth=_r3(raw_opex_growth),
             opex_ratio=_r3(ordered["Operating_Expenses"] / ordered["Revenue"].replace(0, pd.NA)),
-            rev_minus_opex=_r3(raw_rev_growth.round(3) - raw_opex_growth),
+            rev_minus_opex=_r3(raw_rev_growth - raw_opex_growth),
             fcf=_r3(
                 ordered["Cash_Flow_from_Operating_Activities"] - ordered["Capital_Expenditures"]
             ),

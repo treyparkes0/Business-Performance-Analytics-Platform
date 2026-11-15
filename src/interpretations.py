@@ -23,7 +23,7 @@ PROFITABILITY = {
 OPERATIONS = {
     "AMD": "AMD’s operating efficiency improved as revenue grew faster than operating expenses. Operating expenses also fell from 42.0% to 38.9% of revenue, showing that the company is managing its costs more effectively.",
     "Adobe": "Adobe’s operating efficiency improved significantly in 2025 as operating expense growth slowed to 0.9% while revenue continued to grow. Operating expenses also fell from 57.7% to 52.6% of revenue, showing better cost management.",
-    "Apple": "Apple’s operating expenses have grown faster than revenue in both years, creating some pressure on costs. In 2025, operating expenses grew 1.8 percentage points faster than revenue, while operating expenses remained relatively low at about 15% of revenue.",
+    "Apple": "Apple’s operating expenses have grown faster than revenue in both years, creating some pressure on costs. In 2025, operating expenses grew 1.7 percentage points faster than revenue, while operating expenses remained relatively low at about 15% of revenue.",
     "CrowdStrike": "CrowdStrike’s operating efficiency has weakened as operating expenses have grown faster than revenue. Operating expenses reached 80.8% of revenue in 2026, showing increasing pressure from operating costs.",
     "Microsoft": "Microsoft has maintained strong operating efficiency, with revenue growing faster than operating expenses. Operating expenses also fell from 25.1% to 21.2% of revenue, showing that the company is managing its costs effectively.",
     "NVIDIA": "NVIDIA continues to show strong operating efficiency, with revenue growing much faster than operating expenses. However, the gap has narrowed significantly, suggesting that its cost advantage is becoming less pronounced as the company grows.",
@@ -67,7 +67,7 @@ EXECUTIVE = {
     "Apple": {
         "Growth": "Revenue growth has been relatively consistent, with slightly positive momentum.",
         "Profitability": "Gross margin is stable. Operating income grew 8.0% in FY2025, and net income grew 19.5%.",
-        "Operations": "Operating expenses grew faster than revenue in both years (1.8 percentage points faster in 2025), while opex stayed near 15% of revenue.",
+        "Operations": "Operating expenses grew faster than revenue in both years (1.7 percentage points faster in 2025), while opex stayed near 15% of revenue.",
         "Cash Flow": "Operating cash flow remains large, but OCF margin declined to 26.8% in 2025 and OCF fell 5.7%.",
         "Financial Health": "Improving leverage (debt-to-equity 1.70 to 1.23) with tighter liquidity (current ratio still below 1.0).",
         "Management Attention": "Monitor current assets and short-term liabilities, and whether operating-expense growth continues to outpace revenue.",
@@ -161,7 +161,7 @@ ALERTS = [
         "company": "Apple",
         "area": "Operations",
         "kind": "monitor",
-        "signal": "Operating expenses grew 1.8 percentage points faster than revenue in 2025, while opex stayed near 15% of revenue.",
+        "signal": "Operating expenses grew 1.7 percentage points faster than revenue in 2025, while opex stayed near 15% of revenue.",
         "why": "Cost growth ahead of revenue can pressure margins if it persists, even when the opex ratio is still low.",
         "attention": "Watch whether operating-expense growth continues to outpace revenue.",
     },

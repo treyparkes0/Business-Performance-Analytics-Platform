@@ -436,6 +436,8 @@ def performance(df: pd.DataFrame, gt: pd.DataFrame) -> pd.DataFrame:
     b["Prior_Opex"] = grp["Operating_Expenses"].shift(1)
     b["Prior_OCF"] = grp["Cash_Flow_from_Operating_Activities"].shift(1)
 
+    prior_rev = grp["Revenue"].shift(1)
+    raw_rev_growth = _div(b["Revenue"] - prior_rev, prior_rev)
     opex_growth = _div(b["Operating_Expenses"] - b["Prior_Opex"], b["Prior_Opex"])
     p = b.merge(
         gt[["Company", "Fiscal_Year", "Growth_Rate", "Net_Income_Margin_pct"]],
@@ -450,7 +452,7 @@ def performance(df: pd.DataFrame, gt: pd.DataFrame) -> pd.DataFrame:
     p["Net_Income_Growth"] = _r3(_div(p["Net_Income"] - p["Prior_Net_Income"], p["Prior_Net_Income"]))
     p["Operating_Expense_Growth"] = _r3(opex_growth)
     p["Operating_Expense_to_Revenue"] = _r3(_div(p["Operating_Expenses"], p["Revenue"]))
-    p["Revenue_Growth_Minus_Opex_Growth"] = _r3(p["Growth_Rate"] - opex_growth)
+    p["Revenue_Growth_Minus_Opex_Growth"] = _r3(raw_rev_growth - opex_growth)
     p["Operating_Cash_Flow_Margin_pct"] = _r3(
         _div(p["Cash_Flow_from_Operating_Activities"], p["Revenue"])
     )

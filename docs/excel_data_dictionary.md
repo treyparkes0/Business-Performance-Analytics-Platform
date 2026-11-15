@@ -140,7 +140,7 @@ Warehouse: `financial_analytics.analytics.performance`. One row per company-year
 
 Free cash flow is operating cash flow minus capital expenditures. Capital expenditures are positive SEC payments.
 
-`Revenue_Growth_Minus_Opex_Growth` subtracts unrounded expense growth from the already rounded `Growth_Rate`, then rounds.
+`Revenue_Growth_Minus_Opex_Growth` subtracts unrounded operating-expense growth from unrounded revenue growth, then rounds the difference.
 
 ### financial_health
 

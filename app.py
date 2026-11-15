@@ -65,7 +65,7 @@ LEAD_LABELS = [
     "Revenue",
     "Revenue Growth",
     "Operating Margin",
-    "Free Cash Flow",
+    "Operating Cash Flow Margin",
     "FY2025 average rank",
 ]
 
@@ -144,7 +144,6 @@ OVERVIEW_TABLES = {
         "Operating_Cash_Flow_Margin_pct",
         "Operating_Cash_Flow_Growth",
         "Cash_Conversion_Display",
-        "Free_Cash_Flow",
     ],
     "Financial Health": [
         "Company",
@@ -417,7 +416,6 @@ def render_kpis(frame: pd.DataFrame, labels: list[str]) -> None:
         "ROA (average assets)": ("ROA", "pct"),
         "ROE (average equity)": ("ROE", "pct"),
         "Revenue": ("Revenue", "money"),
-        "Free Cash Flow": ("Free_Cash_Flow", "money"),
         "FY2025 average rank": ("FY2025_Average_Rank", "ratio"),
     }
     items = []
@@ -675,7 +673,6 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
             "Operating_Cash_Flow_Growth",
             "Cash_Conversion_Display",
             "Cash_Conversion_Meaningful",
-            "Free_Cash_Flow",
         ],
     )
     labeled = cash_nm_labels(data)

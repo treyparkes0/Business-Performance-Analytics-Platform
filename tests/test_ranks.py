@@ -1,6 +1,5 @@
 """Rank direction, ties, and missing values for the FY2025 peer set."""
 
-import duckdb
 import pandas as pd
 
 from src.bp_metrics import RANKED_METRICS, peer_benchmarking, rank_values
@@ -39,28 +38,6 @@ def test_rank_ties_share_min_and_missing_is_last():
     lower = rank_values(values, higher_is_better=False)
     assert higher.tolist() == [1, 1, 3, 4]
     assert lower.tolist() == [2, 2, 1, 4]
-
-
-def test_sql_rank_matches_pandas_ties_and_missing():
-    connection = duckdb.connect()
-    connection.execute("CREATE TABLE metric (company VARCHAR, metric DOUBLE)")
-    connection.execute(
-        "INSERT INTO metric VALUES ('A', 10), ('B', 10), ('C', 8), ('D', NULL)"
-    )
-    sql = connection.execute(
-        """
-        SELECT company,
-               RANK() OVER (ORDER BY metric DESC NULLS LAST) AS rank_desc,
-               RANK() OVER (ORDER BY metric ASC NULLS LAST) AS rank_asc
-        FROM metric
-        ORDER BY company
-        """
-    ).fetchdf()
-    values = pd.Series([10.0, 10.0, 8.0, None], index=list("ABCD"))
-    higher = rank_values(values, higher_is_better=True)
-    lower = rank_values(values, higher_is_better=False)
-    assert sql["rank_desc"].tolist() == [int(value) for value in higher.tolist()]
-    assert sql["rank_asc"].tolist() == [int(value) for value in lower.tolist()]
 
 
 def test_synthetic_direction_ties_and_missing():

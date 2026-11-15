@@ -840,7 +840,7 @@ NOTE_TOPICS = (
 )
 
 
-def _write_management(workbook, analysis, row: int) -> None:
+def _write_management(workbook, analysis, row: int) -> int:
     calc = workbook["Calc"]
     calc["A35"] = "Notes"
     calc["A35"].font = LABEL_FONT
@@ -860,8 +860,6 @@ def _write_management(workbook, analysis, row: int) -> None:
         calc.cell(source_row, 6, notes["Financial Health"])
         calc.cell(source_row, 7, notes["Management Attention"])
         calc.cell(source_row, 8, _attention(company))
-    if row < 20:
-        raise RuntimeError(f"Management section starts at row {row}")
     row = _section(analysis, row, "Management considerations", 7)
     for label, _key, column in NOTE_TOPICS:
         analysis.row_dimensions[row].height = 64
@@ -883,34 +881,35 @@ def _write_management(workbook, analysis, row: int) -> None:
         '=IF(Selected_Company="Apple","Read ROE next to ROA. Buybacks reduce equity, which lifts ROE.","")',
     )
     analysis.cell(row, 2).alignment = Alignment(wrap_text=True, vertical="center", indent=1)
+    return row + 2
 
 
-def _write_competition(peer, row: int) -> None:
-    row = _section(peer, row, "What the differences mean", 6)
-    peer.row_dimensions[row].height = 32
-    peer.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+def _write_competition(sheet, row: int) -> None:
+    row = _section(sheet, row, "What the differences mean", 6)
+    sheet.row_dimensions[row].height = 32
+    sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
     _text(
-        peer.cell(row, 1),
+        sheet.cell(row, 1),
         "Rank 1 is strongest. Rank 6 is weakest. The average weights the nine FY2025 metrics equally.",
     )
     row += 2
-    _text(peer.cell(row, 1), "Lowest average rank", LABEL_FONT)
-    peer.cell(row, 1).border = THIN
-    _formula(peer.cell(row, 2), "=INDEX(tblPeerBenchmarking[Company],1)")
-    _formula(peer.cell(row, 3), "=" + _kept("INDEX(tblPeerBenchmarking[Average_Rank],1)"), "0.000")
+    _text(sheet.cell(row, 1), "Lowest average rank", LABEL_FONT)
+    sheet.cell(row, 1).border = THIN
+    _formula(sheet.cell(row, 2), "=INDEX(tblPeerBenchmarking[Company],1)")
+    _formula(sheet.cell(row, 3), "=" + _kept("INDEX(tblPeerBenchmarking[Average_Rank],1)"), "0.000")
     row += 1
-    _text(peer.cell(row, 1), "Highest average rank", LABEL_FONT)
-    peer.cell(row, 1).border = THIN
-    _formula(peer.cell(row, 2), "=INDEX(tblPeerBenchmarking[Company],6)")
-    _formula(peer.cell(row, 3), "=" + _kept("INDEX(tblPeerBenchmarking[Average_Rank],6)"), "0.000")
+    _text(sheet.cell(row, 1), "Highest average rank", LABEL_FONT)
+    sheet.cell(row, 1).border = THIN
+    _formula(sheet.cell(row, 2), "=INDEX(tblPeerBenchmarking[Company],6)")
+    _formula(sheet.cell(row, 3), "=" + _kept("INDEX(tblPeerBenchmarking[Average_Rank],6)"), "0.000")
     row += 2
-    peer.row_dimensions[row].height = 72
-    peer.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
-    _text(peer.cell(row, 1), PEER)
+    sheet.row_dimensions[row].height = 72
+    sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+    _text(sheet.cell(row, 1), PEER)
     row += 1
-    peer.row_dimensions[row].height = 96
-    peer.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
-    _text(peer.cell(row, 1), CONCLUSION)
+    sheet.row_dimensions[row].height = 96
+    sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+    _text(sheet.cell(row, 1), CONCLUSION)
 
 
 def apply_company_selector(workbook) -> None:
@@ -956,7 +955,7 @@ def apply_company_selector(workbook) -> None:
             ("FY2025 average rank", "FY2025_Average_Rank", "0.000"),
         ],
     )
-    row = _year_block(
+    _year_block(
         dashboard,
         row,
         "Historical performance",
@@ -968,16 +967,6 @@ def apply_company_selector(workbook) -> None:
             ("Free cash flow", "Free_Cash_Flow", "#,##0"),
         ],
     )
-    row = _section(dashboard, row, "Key observations", 2)
-    dashboard.row_dimensions[row].height = 32
-    dashboard.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
-    note = dashboard.cell(
-        row,
-        1,
-        '=IF(Selected_Company="Apple","Read ROE next to ROA. Buybacks reduce equity, which lifts ROE.","")',
-    )
-    note.font = BODY
-    note.alignment = Alignment(wrap_text=True, vertical="center", indent=1)
 
     forecast = workbook["Financial Forecast"]
     _company_banner(forecast, 6, editable=False)
@@ -1082,42 +1071,8 @@ def apply_company_selector(workbook) -> None:
 
     analysis = workbook["Company Analysis"]
     _company_banner(analysis, 6, editable=False)
-    row = 8
-    for title, columns in (
-        ("Growth", [
-            ("Fiscal year", "Fiscal_Year", "0"),
-            ("Revenue", "Revenue", "#,##0"),
-            ("Revenue growth", "Growth_Rate", "0.0%"),
-            ("Prior growth", "Prior_Growth_Rate", "0.0%"),
-            ("Growth differential", "Growth_Differential", "0.0%"),
-        ]),
-        ("Profitability", [
-            ("Gross margin", "Gross_Margin_pct", "0.0%"),
-            ("Operating margin", "Operating_Margin_pct", "0.0%"),
-            ("Net income margin", "Net_Income_Margin_pct", "0.0%"),
-        ]),
-        ("Operating efficiency", [
-            ("Expense to revenue", "Operating_Expense_to_Revenue", "0.0%"),
-            ("Expense growth", "Operating_Expense_Growth", "0.0%"),
-            ("Revenue growth minus expense growth", "Revenue_Growth_Minus_Opex_Growth", "0.0%"),
-        ]),
-        ("Cash flow", [
-            ("Free cash flow", "Free_Cash_Flow", "#,##0"),
-            ("Free cash flow margin", "Free_Cash_Flow_Margin_pct", "0.0%"),
-            ("Cash conversion", "Cash_Conversion_Ratio", "0.000"),
-            ("Meaningful", "Cash_Conversion_Meaningful", None),
-        ]),
-        ("Financial health", [
-            ("Current ratio", "Current_ratio", "0.000"),
-            ("Debt to equity", "debt_to_equity_ratio", "0.000"),
-            ("ROA", "ROA", "0.0%"),
-            ("ROE", "ROE", "0.0%"),
-            ("Liabilities imputed", "Total_Liabilities_Imputed", None),
-            ("Short-term debt reported", "Short_Term_Debt_Reported", None),
-        ]),
-    ):
-        row = _metric_list(analysis, row, title, "tblExecutiveSummary", columns)
-    _write_management(workbook, analysis, row)
+    row = _write_management(workbook, analysis, 8)
+    _write_competition(analysis, row)
 
     peer = workbook["Peer Benchmarking"]
     peer.row_dimensions[6].height = 22
@@ -1150,8 +1105,7 @@ def apply_company_selector(workbook) -> None:
         ("ROE", "ROE_Rank", "0"),
         ("Average rank", "Average_Rank", "0.000"),
     ]
-    row, _rank_start = _peer_block(peer, row, "Rankings", rank_columns)
-    _write_competition(peer, row)
+    _peer_block(peer, row, "Rankings", rank_columns)
 
     existing = set(workbook.defined_names)
     for name in ("Company_List", "Selected_Company"):
@@ -1382,7 +1336,6 @@ def _prove_formulas(excel, workbook) -> None:
     forecast = workbook.Worksheets("Financial Forecast")
     assumptions = workbook.Worksheets("Assumptions")
     analysis = workbook.Worksheets("Company Analysis")
-    peer = workbook.Worksheets("Peer Benchmarking")
     if forecast.ChartObjects().Count < 1:
         raise RuntimeError("Actual-versus-forecast chart is missing")
     if forecast.Range("B21").Value != "Base":
@@ -1449,11 +1402,11 @@ def _prove_formulas(excel, workbook) -> None:
         expected = float(latest) * (1 + float(growth))
         if abs(float(downside) - expected) > 1:
             raise RuntimeError(f"Downside revenue is {downside}, expected {expected}")
-        low_row = _label_row(peer, "Lowest average rank")
-        high_row = _label_row(peer, "Highest average rank")
-        if peer.Cells(low_row, 2).Value != "NVIDIA" or round(float(peer.Cells(low_row, 3).Value), 3) != 1.222:
+        low_row = _label_row(analysis, "Lowest average rank")
+        high_row = _label_row(analysis, "Highest average rank")
+        if analysis.Cells(low_row, 2).Value != "NVIDIA" or round(float(analysis.Cells(low_row, 3).Value), 3) != 1.222:
             raise RuntimeError("Lowest average rank is not NVIDIA 1.222")
-        if peer.Cells(high_row, 2).Value != "CrowdStrike" or round(float(peer.Cells(high_row, 3).Value), 3) != 4.889:
+        if analysis.Cells(high_row, 2).Value != "CrowdStrike" or round(float(analysis.Cells(high_row, 3).Value), 3) != 4.889:
             raise RuntimeError("Highest average rank is not CrowdStrike 4.889")
         dashboard.Range("B6").Value = "Apple"
         excel.Calculate()

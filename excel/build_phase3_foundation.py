@@ -178,13 +178,6 @@ def build() -> Path:
                         "Sources after import: tblGrowthTrend, tblPerformance, and tblFinancialHealth, filtered to Selected_Company.",
                     ],
                 ),
-                (
-                    "Key observations",
-                    [
-                        "Reserved for narrative. No observations are written in this foundation.",
-                        "Apple ROE is read next to ROA. That note is not a calculation.",
-                    ],
-                ),
             ],
         ),
         (
@@ -309,31 +302,15 @@ def build() -> Path:
         ),
         (
             "Company Analysis",
-            "One company across the historical views. The selector is not active yet.",
+            "Written read for the selected company. The view sheets above stay numeric.",
             [
                 (
-                    "Growth",
-                    ["Source after import: tblGrowthTrend for the selected company."],
-                ),
-                (
-                    "Profitability",
-                    ["Source after import: margin and profit columns on tblPerformance."],
-                ),
-                (
-                    "Operating efficiency",
-                    ["Source after import: operating-expense ratio, expense growth, and revenue growth minus expense growth."],
-                ),
-                (
-                    "Cash flow",
-                    ["Source after import: the cash columns on tblPerformance, including the meaningfulness flag."],
-                ),
-                (
-                    "Financial health",
-                    ["Source after import: tblFinancialHealth, including imputation and reported-debt flags."],
-                ),
-                (
                     "Management considerations",
-                    ["Reserved for narrative. No considerations are written in this foundation."],
+                    ["Growth, profitability, operations, cash flow, financial health, and management attention follow Selected_Company."],
+                ),
+                (
+                    "Peer read",
+                    ["FY2025 average-rank ends, the peer paragraph, and the conclusion. This is the only narrative in the workbook."],
                 ),
             ],
         ),

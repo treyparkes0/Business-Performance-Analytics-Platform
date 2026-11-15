@@ -59,6 +59,16 @@ PAGES = [
     "Glossary",
 ]
 
+COMPANY_ORDER = ["Microsoft", "Apple", "NVIDIA", "Adobe", "AMD", "CrowdStrike"]
+
+LEAD_LABELS = [
+    "Revenue",
+    "Revenue Growth",
+    "Operating Margin",
+    "Free Cash Flow",
+    "FY2025 average rank",
+]
+
 KPI_GROUPS = {
     "All": [
         "Revenue Growth",
@@ -325,6 +335,39 @@ FISCAL_YEAR_NOTE = (
 )
 
 
+def ordered_names(names) -> list[str]:
+    present = {str(name) for name in names}
+    return [name for name in COMPANY_ORDER if name in present] + sorted(present - set(COMPANY_ORDER))
+
+
+def company_choices(frame: pd.DataFrame) -> list[str]:
+    return ["All Companies"] + ordered_names(frame["Company"].dropna().unique())
+
+
+def finding_for(mapping: dict[str, str], company: str) -> str:
+    if company != "All Companies":
+        return notes.notes_for(mapping, company)
+    parts = [mapping[name] for name in COMPANY_ORDER if name in mapping]
+    return "\n\n".join(parts)
+
+
+def show_attention_line(company: str) -> None:
+    if company == "All Companies":
+        st.caption("Management attention for each company is on the Management Attention page.")
+        return
+    alerts = notes.alerts_for(company)
+    if not alerts:
+        st.caption("No management-attention item is recorded for this company. See Management Attention.")
+        return
+    items = "; ".join(f"{alert['kind']} — {alert['area']}" for alert in alerts)
+    st.caption(f"Management attention: {items}. The full note is on Management Attention.")
+
+
+def show_company_read(mapping: dict[str, str], company: str, year_label: str) -> None:
+    show_data_notes(finding_for(mapping, company), year_label)
+    show_attention_line(company)
+
+
 def overview_card_frame(frame: pd.DataFrame, year_label: str) -> pd.DataFrame:
     """One row per company. All years uses each company's latest fiscal year."""
     if year_label == "All":
@@ -343,7 +386,7 @@ def render_overview_kpis(frame: pd.DataFrame, labels: list[str], year_label: str
         st.caption("Each company's most recent fiscal year.")
     else:
         st.caption(f"FY{year_label}.")
-    for name in sorted(cards["Company"].dropna().unique()):
+    for name in ordered_names(cards["Company"].dropna().unique()):
         subset = cards.loc[cards["Company"] == name]
         year = int(subset["Fiscal_Year"].max())
         st.markdown(
@@ -373,6 +416,9 @@ def render_kpis(frame: pd.DataFrame, labels: list[str]) -> None:
         "Liabilities-to-Assets": ("Liabilities_to_Assets", "pct"),
         "ROA (average assets)": ("ROA", "pct"),
         "ROE (average equity)": ("ROE", "pct"),
+        "Revenue": ("Revenue", "money"),
+        "Free Cash Flow": ("Free_Cash_Flow", "money"),
+        "FY2025 average rank": ("FY2025_Average_Rank", "ratio"),
     }
     items = []
     for label in labels:
@@ -388,6 +434,20 @@ def executive_page(views: dict[str, pd.DataFrame], company: str, year_label: str
         "operating efficiency, cash generation, and financial health.</p>",
         unsafe_allow_html=True,
     )
+    if company != "All Companies":
+        summary = views.get("executive_summary", pd.DataFrame())
+        lead = summary.loc[summary["Company"] == company] if "Company" in summary.columns else summary.iloc[0:0]
+        if not lead.empty:
+            year = int(lead["Fiscal_Year"].iloc[0])
+            st.caption(
+                f"Latest reported year, FY{year}. "
+                f"The average rank is the FY{PEER_YEAR} comparison, including when the latest year is later."
+            )
+            render_kpis(lead, LEAD_LABELS)
+            finding = notes.EXECUTIVE.get(company, {}).get("Management Attention", "")
+            if finding:
+                show_data_notes(finding, "Latest")
+            show_attention_line(company)
     category = st.selectbox("Metric category", list(KPI_GROUPS.keys()), index=0, key="metric_category")
     frame = kpi_source(views, company, year_label)
     render_overview_kpis(frame, KPI_GROUPS[category], year_label)
@@ -468,6 +528,7 @@ def performance_page(views: dict[str, pd.DataFrame], company: str, year_label: s
             )
             metric_chart(data, "Net_Income_Margin_pct", "Net income margin trend", percent=True, year_label=year_label)
 
+    show_company_read(notes.GROWTH, company, year_label)
     show_table(
         data,
         [
@@ -480,7 +541,6 @@ def performance_page(views: dict[str, pd.DataFrame], company: str, year_label: s
             "Net_Income_Margin_pct",
         ],
     )
-    show_data_notes(notes.notes_for(notes.GROWTH, company), year_label)
 
 
 def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> None:
@@ -522,6 +582,7 @@ def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: st
                 percent=True,
                 year_label=year_label,
             )
+    show_company_read(notes.OPERATIONS, company, year_label)
     maybe_show_table(
         data,
         [
@@ -536,7 +597,6 @@ def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: st
         company,
         year_label,
     )
-    show_data_notes(notes.notes_for(notes.OPERATIONS, company), year_label)
 
 
 def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> None:
@@ -560,6 +620,7 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
         with c2:
             metric_chart(data, "Operating_Margin_pct", "Operating margin trend", percent=True, year_label=year_label)
             metric_chart(data, "Net_Income_Growth", "Net income growth", percent=True, year_label=year_label)
+    show_company_read(notes.PROFITABILITY, company, year_label)
     maybe_show_table(
         data,
         [
@@ -573,7 +634,6 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
         company,
         year_label,
     )
-    show_data_notes(notes.notes_for(notes.PROFITABILITY, company), year_label)
 
 
 def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> None:
@@ -604,6 +664,7 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
                 data, "Operating_Cash_Flow_Margin_pct", "Operating cash flow margin trend", percent=True, year_label=year_label
             )
             metric_chart(data, "Net_Income", "Net income (for comparison with cash)", year_label=year_label)
+    show_company_read(notes.CASH, company, year_label)
     data = attach_cash_conversion_display(data)
     show_table(
         data,
@@ -623,7 +684,6 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
     if labeled:
         st.caption(f"Shown as n/m: {labeled}.")
     st.caption(glossary_notes.CASH_CONVERSION_NOTE)
-    show_data_notes(notes.notes_for(notes.CASH, company), year_label)
 
 
 def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> None:
@@ -652,7 +712,7 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
     st.caption(glossary_notes.CROWDSTRIKE_DEBT_NOTE)
     st.caption(
         "A current ratio below 1.0 is a signal that may warrant attention, not automatically a financial crisis. "
-        "Written notes that cite 65.3% and 58.1% are ending-balance ROA. The chart uses average-balance ROA."
+        "Written notes that cite 65.3% and 58.1% are ending-balance ROA."
     )
     if not is_single_snapshot(company, year_label):
         c1, c2 = st.columns(2)
@@ -663,6 +723,7 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
             metric_chart(data, "debt_to_equity_ratio", "Debt-to-equity trend", year_label=year_label)
             metric_chart(data, "ROA", "ROA (average assets)", percent=True, year_label=year_label)
             metric_chart(data, "ROE", "ROE (average equity)", percent=True, year_label=year_label)
+    show_company_read(notes.HEALTH, company, year_label)
     ending = data.loc[
         data.get("ROA_Uses_Ending_Balance", pd.Series(dtype=bool)).fillna(False)
         | data.get("ROE_Uses_Ending_Balance", pd.Series(dtype=bool)).fillna(False)
@@ -694,7 +755,6 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
         company,
         year_label,
     )
-    show_data_notes(notes.notes_for(notes.HEALTH, company), year_label)
 
 
 def shared_fiscal_year(frame: pd.DataFrame) -> int:
@@ -774,7 +834,16 @@ def peer_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
             "It is context, not a single winner score."
         )
         show_table(benchmark, list(benchmark.columns))
-    show_data_notes(notes.PEER, year_label)
+        ordered = benchmark.sort_values(["Average_Rank", "Company"], kind="mergesort")
+        low = ordered.iloc[0]
+        high = ordered.iloc[-1]
+        st.caption(
+            f"{low['Company']} has the lowest FY{PEER_YEAR} average rank "
+            f"({float(low['Average_Rank']):.3f}). "
+            f"{high['Company']} has the highest ({float(high['Average_Rank']):.3f}). "
+            "A lower average rank is stronger."
+        )
+    show_data_notes(f"{notes.PEER}\n\n{notes.CONCLUSION}", year_label)
 
 
 def glossary_page() -> None:
@@ -941,9 +1010,7 @@ def main() -> None:
         glossary_page()
         return
 
-    companies = ["All Companies"] + sorted(
-        views["company_performance"]["Company"].dropna().unique().tolist()
-    )
+    companies = company_choices(views["company_performance"])
     years = sorted(views["company_performance"]["Fiscal_Year"].dropna().unique().tolist())
     company = st.sidebar.selectbox("Company", companies, index=0)
     year_label = st.sidebar.selectbox(

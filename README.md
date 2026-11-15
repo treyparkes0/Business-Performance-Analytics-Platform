@@ -15,8 +15,9 @@ This project turns SEC Company Facts into a repeatable review of those questions
 ## Business questions
 
 - How has each company's financial performance changed over the years in this extract?
-- Which companies show stronger profitability and operating-cash generation?
+- Which companies show stronger revenue growth, profitability, and operating-cash generation?
 - Are operating expenses growing faster or slower than revenue?
+- What do liquidity and leverage show about financial flexibility?
 - How do the companies compare when the comparison is locked to FY2025, the last year available for every company?
 - Which trends should management investigate, and which results do not establish a cause?
 
@@ -51,12 +52,16 @@ flowchart TD
     C --> F[Local Python fallback]
     F --> E
     E --> G[Streamlit application]
+    E --> X[Excel workbook]
     G --> H[Management findings and recommendations]
+    X --> H
 ```
 
-`extract_sec_company_facts.py` calls the SEC Company Facts API and writes the raw extract, the clean long file, and the wide company-year file.
+`extract_sec_company_facts.py` calls the SEC Company Facts API, checks the annual facts, and writes the raw extract, the clean long file, and the wide company-year file.
 
 The notebook defines five Databricks SQL views on the warehouse copies of those files. `src/bp_metrics.py` calculates the same views from the local wide file. `src/data_source.py` reads the warehouse when Databricks credentials are set. Otherwise it uses the local files. The Streamlit application uses that loader and does not recalculate the financial formulas itself.
+
+`excel/Business_Performance_Analysis.xlsx` is a separate workbook of the same analytical views. It has an executive dashboard, operating performance, cash flow, financial health, peer benchmarking, company analysis, and a three-year forecast from each company's latest reported year. The notebook findings and the Streamlit application do not use that forecast. The workbook stores its query results inside the file. The CSV folder those queries were built from is not in this repository, so opening the workbook does not require a refresh.
 
 The formulas, null rules, and accepted gaps are in [docs/sql_metrics.md](docs/sql_metrics.md). Short metric notes are in [docs/validation_summary.md](docs/validation_summary.md).
 
@@ -168,7 +173,7 @@ data/processed/                       Clean long file and wide company-year file
 docs/sql_metrics.md                   View formulas and null rules
 docs/validation_summary.md            Short notes on returns, cash conversion, and data gaps
 docs/interview_preparation.md         Questions for explaining the project
-excel/Business_Performance_Analysis.xlsx
+excel/Business_Performance_Analysis.xlsx   Companion workbook: dashboards plus a three-year forecast
 tests/                                Metric, ranking, loader, and notebook checks
 ```
 
@@ -177,6 +182,8 @@ tests/                                Metric, ranking, loader, and notebook chec
 Tested with Python 3.13.
 
 ```bash
+git clone https://github.com/treyparkes0/Business-Performance-Analytics-Platform.git
+cd Business-Performance-Analytics-Platform
 python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
@@ -216,7 +223,7 @@ python -m pytest
 - SEC tags differ. CrowdStrike revenue uses the tag that includes assessed tax because the excluding-tax tag is not in its facts. NVIDIA's revenue tag is not the same tag in every year. The extractor's tag order records which tag was selected.
 - Operating expenses, AMD total liabilities, CrowdStrike short-term debt, and NVIDIA FY2021 capital expenditures are missing in the ways described above. Imputed AMD liabilities are flagged.
 - Peer ranks describe this metric set. They do not decide which company is the better business, and the companies operate in different technology subsectors.
-- The review is historical. It does not forecast revenue, margins, or cash flow.
+- The notebook and the Streamlit findings are historical. The Excel workbook also contains a three-year forecast from the latest reported year, with editable assumptions. That forecast is not part of the notebook findings or the application, and it is not a prediction of results.
 
 ## AI-assisted development disclosure
 

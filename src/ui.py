@@ -32,6 +32,10 @@ PCT_COLS = {
     "Revenue_Growth_Minus_Opex_Growth",
     "ROA",
     "ROE",
+    "ROA_Ending",
+    "ROE_Ending",
+    "ROA_Avg",
+    "ROE_Avg",
     "Liabilities_to_Assets",
 }
 MONEY_COLS = {
@@ -68,8 +72,22 @@ COLUMN_LABELS = {
     "Current_ratio": "Current Ratio",
     "debt_to_equity_ratio": "Debt-to-Equity",
     "Liabilities_to_Assets": "Liabilities-to-Assets",
-    "ROA": "ROA",
-    "ROE": "ROE",
+    "ROA": "ROA (average assets)",
+    "ROE": "ROE (average equity)",
+    "ROA_Ending": "ROA (ending assets)",
+    "ROE_Ending": "ROE (ending equity)",
+    "ROA_Avg": "ROA average only",
+    "ROE_Avg": "ROE average only",
+    "ROA_Uses_Ending_Balance": "ROA Uses Ending Balance",
+    "ROE_Uses_Ending_Balance": "ROE Uses Ending Balance",
+    "Cash_Conversion_Display": "Cash Conversion",
+    "Cash_Conversion_Meaningful": "Cash Conversion Meaningful",
+    "Total_Liabilities_Imputed": "Liabilities Imputed",
+    "Short_Term_Debt_Reported": "Short-Term Debt Reported",
+    "Long_Term_Debt_Reported": "Long-Term Debt Reported",
+    "Average_Rank": "Average Rank",
+    "FY2025_Average_Rank": "FY2025 Average Rank",
+    "Operating_Expense_to_Revenue_Rank": "OpEx / Revenue Rank",
     "Rank": "Rank",
 }
 
@@ -341,7 +359,9 @@ def show_table(frame: pd.DataFrame, columns: list[str]) -> None:
             fmt[label] = "{:,.0f}"
         elif src in RATIO_COLS:
             fmt[label] = "{:.3f}"
-        elif src == "Rank":
+        elif src == "Average_Rank" or src.endswith("Average_Rank"):
+            fmt[label] = "{:.3f}"
+        elif src == "Rank" or src.endswith("_Rank"):
             fmt[label] = "{:.0f}"
     st.dataframe(show.style.format(fmt, na_rep="—"), use_container_width=True, hide_index=True)
 

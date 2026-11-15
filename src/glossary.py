@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from src.bp_metrics import (
+    CASH_CONVERSION_ABS_THRESHOLD,
+    RANK_MISSING_RULE,
+    RANK_TIE_RULE,
+)
+
 # Views align with app navigation and source view names.
 VIEW_COMPANY_PERFORMANCE = "Company Performance"
 VIEW_OPERATIONS = "Operations"
@@ -17,6 +23,45 @@ CALCULATED = "Calculated"
 ROUND = "Rounded to 3 decimal places."
 PRIOR_CO = "Prior year is the previous fiscal year for the same company."
 PRIOR_TICKER = "Prior year is the previous fiscal year for the same ticker."
+
+AMD_LIABILITIES_NOTE = (
+    "AMD total liabilities are imputed as total assets minus stockholders' equity "
+    "because AMD companyfacts has no Total_Liabilities tag. Total_Liabilities_Imputed "
+    "is true on those rows. Other companies are not imputed."
+)
+CROWDSTRIKE_DEBT_NOTE = (
+    "CrowdStrike short-term debt is unreported for FY2021 through FY2026 and is treated as 0 "
+    "in total debt and debt-to-equity. Short_Term_Debt_Reported is false for those years. "
+    "A reported zero stays zero and is marked reported."
+)
+APPLE_ROE_CAVEAT = (
+    "Buybacks inflate Apple's ROE because they shrink stockholders' equity. "
+    "The same net income divided by a smaller equity base produces a higher ROE. "
+    "Read Apple's ROE next to ROA before treating it as operating performance."
+)
+CASH_CONVERSION_NOTE = (
+    "Cash conversion is shown as n/m when it is not meaningful: net income is zero or negative, "
+    f"or the absolute value of operating cash flow / net income is greater than {CASH_CONVERSION_ABS_THRESHOLD}. "
+    "A ratio equal to that threshold stays meaningful. CrowdStrike FY2025 is the example: "
+    "a small net loss against large operating cash flow produces a ratio near -90.7, which is not a comparable conversion rate. "
+    "The raw ratio remains on Cash_Conversion_Ratio."
+)
+ROA_ROE_NOTE = (
+    "Primary ROA and ROE use average balances, (ending balance + prior-year balance) / 2. "
+    "Ending balances are used only when there is no prior year, and ROA_Uses_Ending_Balance or "
+    "ROE_Uses_Ending_Balance is true on those rows. ROA_Ending and ROE_Ending always use the ending balance. "
+    "ROA_Avg and ROE_Avg are blank when there is no prior year."
+)
+
+METHODOLOGY_NOTES = [
+    ROA_ROE_NOTE,
+    APPLE_ROE_CAVEAT,
+    CASH_CONVERSION_NOTE,
+    CROWDSTRIKE_DEBT_NOTE,
+    AMD_LIABILITIES_NOTE,
+    RANK_TIE_RULE,
+    RANK_MISSING_RULE,
+]
 
 
 def _term(
@@ -118,10 +163,18 @@ TERMS: list[dict[str, str | list[str]]] = [
     _term(
         "Total_Liabilities",
         "Total Liabilities",
-        "Total liabilities on the balance sheet. If missing in the source file, it is filled as assets minus equity.",
+        "Total liabilities on the balance sheet. " + AMD_LIABILITIES_NOTE,
         SOURCE,
         [VIEW_HEALTH],
-        "If missing: Total Assets − Total Stockholders' Equity.",
+        "AMD only, and only when the source value is null: Total Assets − Total Stockholders' Equity. Other companies keep a null.",
+    ),
+    _term(
+        "Total_Liabilities_Imputed",
+        "Total Liabilities Imputed",
+        AMD_LIABILITIES_NOTE,
+        CALCULATED,
+        [VIEW_HEALTH],
+        "True when Company is AMD and Total Liabilities was null in the source extract.",
     ),
     _term(
         "Total_Stockholders_Equity",
@@ -147,9 +200,17 @@ TERMS: list[dict[str, str | list[str]]] = [
     _term(
         "Short_Term_Debt",
         "Short-Term Debt",
-        "Debt due within a year. Missing values are treated as 0 when building total debt.",
+        "Debt due within a year. Missing values are treated as 0 when building total debt. " + CROWDSTRIKE_DEBT_NOTE,
         SOURCE,
         [VIEW_HEALTH],
+    ),
+    _term(
+        "Short_Term_Debt_Reported",
+        "Short-Term Debt Reported",
+        "True when short-term debt was present in the source, including a reported zero. False when the tag was missing. " + CROWDSTRIKE_DEBT_NOTE,
+        CALCULATED,
+        [VIEW_HEALTH, VIEW_PEERS],
+        "True when Short-Term Debt is not null. The debt-to-equity ratio still uses 0 for a null.",
     ),
     _term(
         "Long_Term_Debt",
@@ -157,6 +218,14 @@ TERMS: list[dict[str, str | list[str]]] = [
         "Debt due after one year. Missing values are treated as 0 when building total debt.",
         SOURCE,
         [VIEW_HEALTH],
+    ),
+    _term(
+        "Long_Term_Debt_Reported",
+        "Long-Term Debt Reported",
+        "True when long-term debt was present in the source, including a reported zero. False when the tag was missing.",
+        CALCULATED,
+        [VIEW_HEALTH],
+        "True when Long-Term Debt is not null. The debt-to-equity ratio still uses 0 for a null.",
     ),
     _term(
         "Growth_Rate",
@@ -265,10 +334,19 @@ TERMS: list[dict[str, str | list[str]]] = [
     _term(
         "Cash_Conversion_Ratio",
         "Cash Conversion Ratio",
-        "How much operating cash is generated per dollar of net income. Can be high when earnings are small or negative.",
+        "How much operating cash is generated per dollar of net income. The raw ratio is always kept. " + CASH_CONVERSION_NOTE,
         CALCULATED,
         [VIEW_OVERVIEW, VIEW_CASH],
-        f"Operating Cash Flow / Net Income. {ROUND}",
+        f"Operating Cash Flow / Net Income. Null when net income is 0. {ROUND}",
+    ),
+    _term(
+        "Cash_Conversion_Meaningful",
+        "Cash Conversion Meaningful",
+        CASH_CONVERSION_NOTE,
+        CALCULATED,
+        [VIEW_OVERVIEW, VIEW_CASH],
+        f"False when Net Income <= 0, or when abs(Operating Cash Flow / Net Income) > {CASH_CONVERSION_ABS_THRESHOLD}. "
+        f"A ratio equal to {CASH_CONVERSION_ABS_THRESHOLD} stays meaningful. The displayed value is n/m when this flag is false.",
     ),
     _term(
         "Free_Cash_Flow",
@@ -289,10 +367,10 @@ TERMS: list[dict[str, str | list[str]]] = [
     _term(
         "Total_Debt",
         "Total Debt",
-        "Interest-bearing debt used in the debt-to-equity ratio.",
+        "Interest-bearing debt used in the debt-to-equity ratio. A missing leg is 0. The reported flags say whether that 0 was actually reported.",
         CALCULATED,
         [VIEW_HEALTH],
-        "Short-Term Debt (missing = 0) + Long-Term Debt (missing = 0).",
+        "Short-Term Debt (missing = 0) + Long-Term Debt (missing = 0). " + CROWDSTRIKE_DEBT_NOTE,
     ),
     _term(
         "Current_ratio",
@@ -321,139 +399,186 @@ TERMS: list[dict[str, str | list[str]]] = [
     _term(
         "ROA",
         "ROA",
-        "Return on assets: earnings generated from the asset base (end-of-year assets).",
+        "Primary return on assets. " + ROA_ROE_NOTE,
         CALCULATED,
         [VIEW_OVERVIEW, VIEW_HEALTH, VIEW_PEERS],
+        f"If a prior year exists: Net Income / ((Total Assets + prior-year Total Assets) / 2). Otherwise Net Income / Total Assets. {PRIOR_TICKER} {ROUND}",
+    ),
+    _term(
+        "ROA_Ending",
+        "ROA (Ending Assets)",
+        "Return on assets using the fiscal year-end asset balance. Kept beside the primary average-balance ROA.",
+        CALCULATED,
+        [VIEW_HEALTH],
         f"Net Income / Total Assets. {ROUND}",
     ),
     _term(
         "ROE",
         "ROE",
-        "Return on equity: earnings generated from book equity (end-of-year equity).",
+        "Primary return on equity. " + ROA_ROE_NOTE + " " + APPLE_ROE_CAVEAT,
         CALCULATED,
         [VIEW_OVERVIEW, VIEW_HEALTH, VIEW_PEERS],
+        f"If a prior year exists: Net Income / ((Stockholders' Equity + prior-year Stockholders' Equity) / 2). Otherwise Net Income / Stockholders' Equity. {PRIOR_TICKER} {ROUND}",
+    ),
+    _term(
+        "ROE_Ending",
+        "ROE (Ending Equity)",
+        "Return on equity using the fiscal year-end equity balance. Kept beside the primary average-balance ROE. " + APPLE_ROE_CAVEAT,
+        CALCULATED,
+        [VIEW_HEALTH],
         f"Net Income / Stockholders' Equity. {ROUND}",
     ),
     _term(
         "ROA_Avg",
         "ROA (Average Assets)",
-        "Return on assets using average assets over two years, which smooths one-year balance-sheet swings.",
+        "Average-balance ROA with no fallback. Blank when there is no prior year. The primary ROA column copies this value when a prior year exists.",
         CALCULATED,
         [VIEW_HEALTH],
         f"Net Income / ((Total Assets + prior-year Total Assets) / 2). {PRIOR_TICKER} {ROUND}",
     ),
     _term(
+        "ROA_Uses_Ending_Balance",
+        "ROA Uses Ending Balance",
+        "True when primary ROA used the ending asset balance because there is no prior-year asset balance.",
+        CALCULATED,
+        [VIEW_HEALTH],
+        "True when the prior-year Total Assets amount is missing.",
+    ),
+    _term(
         "ROE_Avg",
         "ROE (Average Equity)",
-        "Return on equity using average equity over two years.",
+        "Average-balance ROE with no fallback. Blank when there is no prior year. The primary ROE column copies this value when a prior year exists. " + APPLE_ROE_CAVEAT,
         CALCULATED,
         [VIEW_HEALTH],
         f"Net Income / ((Stockholders' Equity + prior-year Stockholders' Equity) / 2). {PRIOR_TICKER} {ROUND}",
     ),
     _term(
+        "ROE_Uses_Ending_Balance",
+        "ROE Uses Ending Balance",
+        "True when primary ROE used the ending equity balance because there is no prior-year equity balance.",
+        CALCULATED,
+        [VIEW_HEALTH],
+        "True when the prior-year Stockholders' Equity amount is missing.",
+    ),
+    _term(
         "Growth_Rate_Rank",
         "Revenue Growth Rank",
-        "Peer rank for revenue growth in the benchmark year (FY2025). Rank 1 is the highest growth.",
+        "Peer rank for revenue growth in FY2025. Rank 1 is the highest growth. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
         CALCULATED,
         [VIEW_PEERS, VIEW_OVERVIEW],
-        "Rank of Growth Rate among companies, highest first (method = min).",
+        "Rank of Growth Rate among FY2025 companies, highest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "Growth_Differential_Rank",
         "Growth Rate Change Rank",
-        "Peer rank for growth acceleration. Rank 1 is the largest (most positive) growth differential.",
+        "Growth-rate change is not one of the nine FY2025 peer ranks and is not in Average Rank.",
         CALCULATED,
-        [VIEW_PEERS],
-        "Rank of Growth Rate Change among companies, highest first (method = min).",
+        [VIEW_COMPANY_PERFORMANCE],
+        "Not included in the FY2025 peer average.",
     ),
     _term(
         "Operating_Margin_Rank",
         "Operating Margin Rank",
-        "Peer rank for operating margin. Rank 1 is the highest margin.",
+        "Peer rank for operating margin in FY2025. Rank 1 is the highest margin.",
         CALCULATED,
         [VIEW_PEERS, VIEW_OVERVIEW],
-        "Rank of Operating Margin among companies, highest first (method = min).",
+        "Rank of Operating Margin among FY2025 companies, highest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "Net_Income_Margin_Rank",
         "Net Income Margin Rank",
-        "Peer rank for net income margin. Rank 1 is the highest margin.",
+        "Peer rank for net income margin in FY2025. Rank 1 is the highest margin.",
         CALCULATED,
         [VIEW_PEERS, VIEW_OVERVIEW],
-        "Rank of Net Income Margin among companies, highest first (method = min).",
+        "Rank of Net Income Margin among FY2025 companies, highest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "Operating_Cash_Flow_Margin_Rank",
         "OCF Margin Rank",
-        "Peer rank for operating cash-flow margin. Rank 1 is the highest margin.",
+        "Peer rank for operating cash-flow margin in FY2025. Rank 1 is the highest margin.",
         CALCULATED,
         [VIEW_PEERS, VIEW_OVERVIEW],
-        "Rank of OCF Margin among companies, highest first (method = min).",
+        "Rank of OCF Margin among FY2025 companies, highest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "Operating_Expense_Growth_Rank",
         "Operating Expense Growth Rank",
-        "Peer rank for opex growth. Rank 1 is the lowest opex growth (costs rising more slowly).",
+        "Operating-expense growth is not one of the nine FY2025 peer ranks. The cost rank in the average is operating expense / revenue.",
+        CALCULATED,
+        [VIEW_OPERATIONS],
+        "Not included in the FY2025 peer average.",
+    ),
+    _term(
+        "Operating_Expense_to_Revenue_Rank",
+        "Operating Expense / Revenue Rank",
+        "Peer rank for operating expense as a share of revenue. Rank 1 is the lowest ratio.",
         CALCULATED,
         [VIEW_PEERS, VIEW_OVERVIEW],
-        "Rank of Operating Expense Growth among companies, lowest first (method = min).",
+        "Rank of Operating Expense / Revenue among FY2025 companies, lowest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "Current_Ratio_Rank",
         "Current Ratio Rank",
-        "Peer rank for current ratio. Rank 1 is the highest liquidity.",
+        "Peer rank for current ratio in FY2025. Rank 1 is the highest liquidity.",
         CALCULATED,
         [VIEW_PEERS],
-        "Rank of Current Ratio among companies, highest first (method = min).",
+        "Rank of Current Ratio among FY2025 companies, highest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "Debt_to_Equity_Rank",
         "Debt-to-Equity Rank",
-        "Peer rank for leverage. Rank 1 is the lowest debt-to-equity.",
+        "Peer rank for leverage in FY2025. Rank 1 is the lowest debt-to-equity. " + CROWDSTRIKE_DEBT_NOTE,
         CALCULATED,
         [VIEW_PEERS],
-        "Rank of Debt-to-Equity among companies, lowest first (method = min).",
+        "Rank of Debt-to-Equity among FY2025 companies, lowest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "Liabilities_to_Assets_Rank",
         "Liabilities-to-Assets Rank",
-        "Peer rank for liabilities vs assets. Rank 1 is the lowest ratio.",
+        "Liabilities-to-assets is not one of the nine FY2025 peer ranks and is not in Average Rank.",
         CALCULATED,
-        [VIEW_PEERS],
-        "Rank of Liabilities-to-Assets among companies, lowest first (method = min).",
+        [VIEW_HEALTH],
+        "Not included in the FY2025 peer average.",
     ),
     _term(
         "ROA_Rank",
         "ROA Rank",
-        "Peer rank for return on assets. Rank 1 is the highest ROA.",
+        "Peer rank for primary ROA in FY2025 (average assets, or ending assets when there is no prior year). Rank 1 is the highest ROA.",
         CALCULATED,
         [VIEW_PEERS, VIEW_OVERVIEW],
-        "Rank of ROA among companies, highest first (method = min).",
+        "Rank of primary ROA among FY2025 companies, highest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "ROE_Rank",
         "ROE Rank",
-        "Peer rank for return on equity. Rank 1 is the highest ROE.",
+        "Peer rank for primary ROE in FY2025 (average equity, or ending equity when there is no prior year). Rank 1 is the highest ROE. " + APPLE_ROE_CAVEAT,
         CALCULATED,
         [VIEW_PEERS, VIEW_OVERVIEW],
-        "Rank of ROE among companies, highest first (method = min).",
+        "Rank of primary ROE among FY2025 companies, highest first. " + RANK_TIE_RULE + " " + RANK_MISSING_RULE,
     ),
     _term(
         "Average_Rank",
         "Average Rank",
-        "Simple average of nine peer ranks. Lower average means stronger overall standing in that benchmark year.",
+        "Equal-weight average of the nine FY2025 peer ranks. Lower average means stronger overall standing in that benchmark year. It is context, not a single winner score. The same nine ranks are attached to every executive-summary row, including FY2026, and labeled as FY2025 ranks.",
         CALCULATED,
-        [VIEW_PEERS],
-        "Average of Growth Rate, Growth Differential, Operating Margin, Net Income Margin, OCF Margin, Current Ratio, Debt-to-Equity, ROA, and ROE ranks. Operating Expense Growth Rank and Liabilities-to-Assets Rank are not in this average. "
+        [VIEW_PEERS, VIEW_OVERVIEW],
+        "Average of revenue growth, operating margin, net income margin, operating expense / revenue, OCF margin, current ratio, debt-to-equity, primary ROA, and primary ROE ranks. "
+        + RANK_TIE_RULE
+        + " "
+        + RANK_MISSING_RULE
+        + " "
         + ROUND,
     ),
     _term(
         "Rank",
         "Rank",
-        "On the Peer Benchmarking page, rank for the metric you selected (not the nine-metric average).",
+        "On the Peer Benchmarking page, rank for the metric you selected. The value is shown next to the rank. The year control does not offer a Latest option that mixes FY2025 and FY2026.",
         CALCULATED,
         [VIEW_PEERS],
-        "Rank of the selected metric in the chosen fiscal year. Higher-is-better metrics are ranked highest first; lower-is-better metrics (opex / revenue, debt-to-equity) are ranked lowest first (method = min).",
+        "Rank of the selected metric in the chosen fiscal year. Higher-is-better metrics are ranked highest first; lower-is-better metrics (operating expense / revenue, debt-to-equity) are ranked lowest first. "
+        + RANK_TIE_RULE
+        + " "
+        + RANK_MISSING_RULE,
     ),
 ]
 

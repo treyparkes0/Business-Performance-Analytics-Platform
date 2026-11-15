@@ -16,6 +16,12 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from src.bp_metrics import (
+    PEER_YEAR,
+    RANK_MISSING_RULE,
+    RANK_TIE_RULE,
+    rank_values,
+)
 from src.data_source import load_views
 from src import glossary as glossary_notes
 from src import interpretations as notes
@@ -70,7 +76,13 @@ KPI_GROUPS = {
         "Revenue Growth − OpEx Growth",
     ],
     "Cash": ["Operating Cash Flow", "Operating Cash Flow Margin", "Operating Cash Flow Growth"],
-    "Financial Health": ["Current Ratio", "Debt-to-Equity", "Liabilities-to-Assets", "ROA"],
+    "Financial Health": [
+        "Current Ratio",
+        "Debt-to-Equity",
+        "Liabilities-to-Assets",
+        "ROA (average assets)",
+        "ROE (average equity)",
+    ],
 }
 
 OVERVIEW_TABLES = {
@@ -121,7 +133,7 @@ OVERVIEW_TABLES = {
         "Cash_Flow_from_Operating_Activities",
         "Operating_Cash_Flow_Margin_pct",
         "Operating_Cash_Flow_Growth",
-        "Cash_Conversion_Ratio",
+        "Cash_Conversion_Display",
         "Free_Cash_Flow",
     ],
     "Financial Health": [
@@ -132,6 +144,8 @@ OVERVIEW_TABLES = {
         "Liabilities_to_Assets",
         "ROA",
         "ROE",
+        "ROA_Ending",
+        "ROE_Ending",
     ],
 }
 
@@ -151,7 +165,8 @@ PEER_METRICS = {
     "OCF Margin": ("Operating_Cash_Flow_Margin_pct", True, True),
     "Current Ratio": ("Current_ratio", True, False),
     "Debt-to-Equity": ("debt_to_equity_ratio", False, False),
-    "ROA": ("ROA", True, True),
+    "ROA (average assets)": ("ROA", True, True),
+    "ROE (average equity)": ("ROE", True, True),
 }
 
 
@@ -173,12 +188,57 @@ def latest_year_rows(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.loc[frame["Fiscal_Year"] == latest].copy()
 
 
+def fiscal_year_options(years: list[int]) -> list[str]:
+    """Year filter. Latest is omitted because it mixes FY2025 and FY2026 in one peer set."""
+    return ["All"] + [str(year) for year in reversed(years)]
+
+
 def slice_year(frame: pd.DataFrame, year_label: str) -> pd.DataFrame:
     if frame.empty or year_label == "All":
         return frame.copy()
     if year_label == "Latest":
         return latest_year_rows(frame)
     return frame.loc[frame["Fiscal_Year"] == int(year_label)].copy()
+
+
+def attach_cash_conversion_display(frame: pd.DataFrame) -> pd.DataFrame:
+    """Show n/m where Cash_Conversion_Meaningful is false. Keep the raw ratio column."""
+    if frame.empty or "Cash_Conversion_Ratio" not in frame.columns:
+        return frame
+    out = frame.copy()
+    flags = (
+        out["Cash_Conversion_Meaningful"]
+        if "Cash_Conversion_Meaningful" in out.columns
+        else pd.Series(pd.NA, index=out.index, dtype="boolean")
+    )
+
+    def one(ratio, flag) -> str:
+        if pd.isna(flag):
+            if pd.isna(ratio):
+                return "—"
+            return f"{float(ratio):.3f}"
+        if not bool(flag):
+            return "n/m"
+        if pd.isna(ratio):
+            return "—"
+        return f"{float(ratio):.3f}"
+
+    out["Cash_Conversion_Display"] = [
+        one(ratio, flag) for ratio, flag in zip(out["Cash_Conversion_Ratio"], flags, strict=True)
+    ]
+    return out
+
+
+def cash_nm_labels(frame: pd.DataFrame) -> str:
+    if frame.empty or "Cash_Conversion_Display" not in frame.columns:
+        return ""
+    nm_rows = frame.loc[frame["Cash_Conversion_Display"] == "n/m"]
+    if nm_rows.empty:
+        return ""
+    return ", ".join(
+        f"{row.Company} FY{int(row.Fiscal_Year)}"
+        for row in nm_rows.sort_values(["Company", "Fiscal_Year"]).itertuples(index=False)
+    )
 
 
 def _drop_overlapping(frame: pd.DataFrame, extra: pd.DataFrame) -> pd.DataFrame:
@@ -213,6 +273,7 @@ def overview_source(views: dict[str, pd.DataFrame], category: str, company: str,
             key = "company_operations"
         frame = views[key].copy()
     frame = slice_year(slice_company(frame, company), year_label)
+    frame = attach_cash_conversion_display(frame)
     return frame.sort_values(["Company", "Fiscal_Year"])
 
 
@@ -310,7 +371,8 @@ def render_kpis(frame: pd.DataFrame, labels: list[str]) -> None:
         "Operating Cash Flow": ("Cash_Flow_from_Operating_Activities", "money"),
         "Operating Cash Flow Growth": ("Operating_Cash_Flow_Growth", "pct"),
         "Liabilities-to-Assets": ("Liabilities_to_Assets", "pct"),
-        "ROA": ("ROA", "pct"),
+        "ROA (average assets)": ("ROA", "pct"),
+        "ROE (average equity)": ("ROE", "pct"),
     }
     items = []
     for label in labels:
@@ -330,6 +392,14 @@ def executive_page(views: dict[str, pd.DataFrame], company: str, year_label: str
     frame = kpi_source(views, company, year_label)
     render_overview_kpis(frame, KPI_GROUPS[category], year_label)
     table = overview_source(views, category, company, year_label)
+    if category == "Cash":
+        st.caption(glossary_notes.CASH_CONVERSION_NOTE)
+        labeled = cash_nm_labels(table)
+        if labeled:
+            st.caption(f"Shown as n/m: {labeled}.")
+    if category in {"All", "Financial Health"}:
+        st.caption(glossary_notes.ROA_ROE_NOTE)
+        st.caption(glossary_notes.APPLE_ROE_CAVEAT)
     maybe_show_table(table, OVERVIEW_TABLES[category], company, year_label)
 
 
@@ -534,7 +604,8 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
                 data, "Operating_Cash_Flow_Margin_pct", "Operating cash flow margin trend", percent=True, year_label=year_label
             )
             metric_chart(data, "Net_Income", "Net income (for comparison with cash)", year_label=year_label)
-    maybe_show_table(
+    data = attach_cash_conversion_display(data)
+    show_table(
         data,
         [
             "Company",
@@ -543,10 +614,15 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
             "Cash_Flow_from_Operating_Activities",
             "Operating_Cash_Flow_Margin_pct",
             "Operating_Cash_Flow_Growth",
+            "Cash_Conversion_Display",
+            "Cash_Conversion_Meaningful",
+            "Free_Cash_Flow",
         ],
-        company,
-        year_label,
     )
+    labeled = cash_nm_labels(data)
+    if labeled:
+        st.caption(f"Shown as n/m: {labeled}.")
+    st.caption(glossary_notes.CASH_CONVERSION_NOTE)
     show_data_notes(notes.notes_for(notes.CASH, company), year_label)
 
 
@@ -562,10 +638,21 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
     )
     render_kpis(
         kpi_source(views, company, year_label),
-        ["Current Ratio", "Debt-to-Equity", "Liabilities-to-Assets", "ROA"],
+        [
+            "Current Ratio",
+            "Debt-to-Equity",
+            "Liabilities-to-Assets",
+            "ROA (average assets)",
+            "ROE (average equity)",
+        ],
     )
+    st.caption(glossary_notes.ROA_ROE_NOTE)
+    st.caption(glossary_notes.APPLE_ROE_CAVEAT)
+    st.caption(glossary_notes.AMD_LIABILITIES_NOTE)
+    st.caption(glossary_notes.CROWDSTRIKE_DEBT_NOTE)
     st.caption(
-        "A current ratio below 1.0 is a signal that may warrant attention, not automatically a financial crisis."
+        "A current ratio below 1.0 is a signal that may warrant attention, not automatically a financial crisis. "
+        "Written notes that cite 65.3% and 58.1% are ending-balance ROA. The chart uses average-balance ROA."
     )
     if not is_single_snapshot(company, year_label):
         c1, c2 = st.columns(2)
@@ -574,7 +661,18 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
             metric_chart(data, "Liabilities_to_Assets", "Liabilities-to-assets trend", percent=True, year_label=year_label)
         with c2:
             metric_chart(data, "debt_to_equity_ratio", "Debt-to-equity trend", year_label=year_label)
-            metric_chart(data, "ROA", "ROA trend", percent=True, year_label=year_label)
+            metric_chart(data, "ROA", "ROA (average assets)", percent=True, year_label=year_label)
+            metric_chart(data, "ROE", "ROE (average equity)", percent=True, year_label=year_label)
+    ending = data.loc[
+        data.get("ROA_Uses_Ending_Balance", pd.Series(dtype=bool)).fillna(False)
+        | data.get("ROE_Uses_Ending_Balance", pd.Series(dtype=bool)).fillna(False)
+    ]
+    if not ending.empty:
+        flagged = ", ".join(
+            f"{row.Company} FY{int(row.Fiscal_Year)}"
+            for row in ending.sort_values(["Company", "Fiscal_Year"]).itertuples(index=False)
+        )
+        st.caption(f"Ending balance used because there is no prior year: {flagged}.")
     maybe_show_table(
         data,
         [
@@ -584,6 +682,14 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
             "debt_to_equity_ratio",
             "Liabilities_to_Assets",
             "ROA",
+            "ROE",
+            "ROA_Ending",
+            "ROE_Ending",
+            "ROA_Uses_Ending_Balance",
+            "ROE_Uses_Ending_Balance",
+            "Total_Liabilities_Imputed",
+            "Short_Term_Debt_Reported",
+            "Long_Term_Debt_Reported",
         ],
         company,
         year_label,
@@ -602,17 +708,16 @@ def shared_fiscal_year(frame: pd.DataFrame) -> int:
 
 
 def rank_snapshot(frame: pd.DataFrame, metric: str, higher_is_better: bool) -> pd.DataFrame:
-    subset = frame.loc[:, ["Company", "Fiscal_Year", metric]].dropna(subset=[metric]).copy()
-    subset["Rank"] = subset[metric].rank(ascending=not higher_is_better, method="min")
-    return subset.sort_values(["Rank", "Company"]).reset_index(drop=True)
+    subset = frame.loc[:, ["Company", "Fiscal_Year", metric]].copy()
+    subset["Rank"] = rank_values(subset[metric], higher_is_better=higher_is_better)
+    return subset.sort_values(["Rank", "Company"], kind="mergesort").reset_index(drop=True)
 
 
 def peer_snapshot(frame: pd.DataFrame, year_label: str) -> tuple[pd.DataFrame, str]:
+    """Rank one fiscal year. All and Latest both use the common year so FY2025 and FY2026 are not mixed."""
     if frame.empty:
         return frame, ""
-    if year_label == "Latest":
-        return latest_year_rows(frame), "latest fiscal year"
-    if year_label == "All":
+    if year_label in {"All", "Latest"}:
         year = shared_fiscal_year(frame)
         subset = frame.loc[frame["Fiscal_Year"] == year].copy()
         return subset, f"FY{year}"
@@ -633,13 +738,9 @@ def peer_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
             f"All years is not one peer set. Ranking {year_text}, "
             "the last fiscal year available for every company."
         )
-    elif year_label == "Latest":
-        st.caption(
-            "Latest uses each company's own fiscal year. "
-            + FISCAL_YEAR_NOTE
-        )
-    else:
-        st.caption(FISCAL_YEAR_NOTE)
+    st.caption(FISCAL_YEAR_NOTE)
+    st.caption(RANK_TIE_RULE + " " + RANK_MISSING_RULE)
+    st.caption(glossary_notes.CROWDSTRIKE_DEBT_NOTE)
     if company != "All Companies":
         st.caption(
             "This page ranks the full peer set for the selected fiscal year. "
@@ -664,8 +765,16 @@ def peer_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
         return
     show_table(ranked, ["Rank", "Company", "Fiscal_Year", col])
     bar_chart(ranked, col, f"{metric_label} — {year_text}", percent=_pct)
+    benchmark = views.get("peer_benchmarking")
+    if benchmark is not None and not benchmark.empty:
+        st.markdown("**FY2025 nine-metric ranks**")
+        st.caption(
+            "Each value sits next to its FY2025 rank. "
+            f"Average rank uses those nine metrics for FY{PEER_YEAR} only, including on companies whose latest year is later. "
+            "It is context, not a single winner score."
+        )
+        show_table(benchmark, list(benchmark.columns))
     show_data_notes(notes.PEER, year_label)
-    st.caption("Companies are ranked on the selected metric only. There is no composite winner score.")
 
 
 def glossary_page() -> None:
@@ -675,6 +784,9 @@ def glossary_page() -> None:
         "Calculated metrics show the same formulas as the app.</p>",
         unsafe_allow_html=True,
     )
+    with st.expander("Methodology notes", expanded=False):
+        for note in glossary_notes.METHODOLOGY_NOTES:
+            st.write(note)
     view_options = ["All views"] + glossary_notes.APP_VIEWS
     f1, f2, f3 = st.columns(3)
     with f1:
@@ -832,7 +944,7 @@ def main() -> None:
     company = st.sidebar.selectbox("Company", companies, index=0)
     year_label = st.sidebar.selectbox(
         "Fiscal year",
-        ["All"] + ["Latest"] + [str(y) for y in reversed(years)],
+        fiscal_year_options(years),
         index=0,
     )
     st.sidebar.caption("Operating review of six technology companies. Not a trading or investment tool.")

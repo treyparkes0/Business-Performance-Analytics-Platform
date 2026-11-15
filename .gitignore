@@ -3,3 +3,6 @@
 __pycache__/
 *.pyc
 .python-version
+.pytest_cache/
+secrets.toml
+.streamlit/secrets.toml

@@ -1,0 +1,134 @@
+"""Liability imputation, debt reported flags, cash-conversion flag, and return basis."""
+
+import pandas as pd
+
+from app import cash_nm_labels, peer_snapshot
+from src.bp_metrics import CASH_CONVERSION_ABS_THRESHOLD, cash_conversion_meaningful, impute_amd_liabilities
+from src.glossary import (
+    AMD_LIABILITIES_NOTE,
+    APPLE_ROE_CAVEAT,
+    CASH_CONVERSION_NOTE,
+    CROWDSTRIKE_DEBT_NOTE,
+    METHODOLOGY_NOTES,
+    ROA_ROE_NOTE,
+    TERMS,
+)
+
+
+def test_imputation_is_limited_to_amd_nulls():
+    frame = pd.DataFrame(
+        {
+            "Company": ["AMD", "Apple", "AMD"],
+            "Total_Assets": [100.0, 80.0, 50.0],
+            "Total_Stockholders_Equity": [40.0, 30.0, 20.0],
+            "Total_Liabilities": [pd.NA, pd.NA, 10.0],
+        }
+    )
+    out = impute_amd_liabilities(frame)
+    assert out.loc[0, "Total_Liabilities"] == 60
+    assert bool(out.loc[0, "Total_Liabilities_Imputed"]) is True
+    assert pd.isna(out.loc[1, "Total_Liabilities"])
+    assert bool(out.loc[1, "Total_Liabilities_Imputed"]) is False
+    assert out.loc[2, "Total_Liabilities"] == 10
+    assert bool(out.loc[2, "Total_Liabilities_Imputed"]) is False
+    again = impute_amd_liabilities(out)
+    assert bool(again.loc[0, "Total_Liabilities_Imputed"]) is True
+    assert again.loc[0, "Total_Liabilities"] == 60
+
+
+def test_source_flags(views):
+    health = views["financial_health"]
+    amd = health.loc[health["Company"] == "AMD"]
+    assert amd["Total_Liabilities_Imputed"].map(bool).all()
+    assert not health.loc[health["Company"] != "AMD", "Total_Liabilities_Imputed"].map(bool).any()
+    amd_2025 = amd.loc[amd["Fiscal_Year"] == 2025].iloc[0]
+    assert amd_2025["Total_Liabilities"] == amd_2025["Total_Assets"] - amd_2025["Total_Stockholders_Equity"]
+
+    crowd = health.loc[health["Company"] == "CrowdStrike"]
+    assert set(crowd["Fiscal_Year"].astype(int)) == {2021, 2022, 2023, 2024, 2025, 2026}
+    assert not crowd["Short_Term_Debt_Reported"].map(bool).any()
+    assert crowd["Long_Term_Debt_Reported"].map(bool).all()
+
+    amd_2022 = amd.loc[amd["Fiscal_Year"] == 2022].iloc[0]
+    assert bool(amd_2022["Short_Term_Debt_Reported"]) is True
+    assert amd_2022["Total_Debt"] == 2467000000
+
+    crowd_2025 = crowd.loc[crowd["Fiscal_Year"] == 2025].iloc[0]
+    assert crowd_2025["Total_Debt"] == 743983000
+
+    first = health.loc[health["Fiscal_Year"] == 2021]
+    assert first["ROA_Uses_Ending_Balance"].map(bool).all()
+    assert first["ROE_Uses_Ending_Balance"].map(bool).all()
+    later = health.loc[health["Fiscal_Year"] == 2025]
+    assert not later["ROA_Uses_Ending_Balance"].map(bool).any()
+    assert not later["ROE_Uses_Ending_Balance"].map(bool).any()
+    nvidia = later.loc[later["Company"] == "NVIDIA"].iloc[0]
+    assert nvidia["ROA"] == nvidia["ROA_Avg"]
+    assert nvidia["ROA"] != nvidia["ROA_Ending"]
+    apple = later.loc[later["Company"] == "Apple"].iloc[0]
+    assert apple["ROE"] == apple["ROE_Avg"]
+    assert apple["ROE"] != apple["ROE_Ending"]
+
+    summary = views["executive_summary"]
+    assert summary["Benchmark_Fiscal_Year"].astype(int).eq(2025).all()
+    latest = summary.loc[summary["Fiscal_Year"] == 2026]
+    assert set(latest["Company"]) == {"CrowdStrike", "Microsoft", "NVIDIA"}
+    assert latest["FY2025_Average_Rank"].notna().all()
+    peers = views["peer_benchmarking"][["Company", "Average_Rank"]]
+    joined = latest.merge(peers, on="Company")
+    assert (joined["FY2025_Average_Rank"] - joined["Average_Rank"]).abs().max() < 1e-9
+
+
+def test_cash_conversion_threshold_and_display(views):
+    net_income = pd.Series([100.0, 100.0, 100.0, -5.0, 0.0, None])
+    cash_flow = pd.Series([500.0, 500.01, 100.0, 10.0, 10.0, 10.0])
+    flag = cash_conversion_meaningful(net_income, cash_flow)
+    assert CASH_CONVERSION_ABS_THRESHOLD == 5
+    assert bool(flag.iloc[0]) is True
+    assert bool(flag.iloc[1]) is False
+    assert bool(flag.iloc[2]) is True
+    assert bool(flag.iloc[3]) is False
+    assert bool(flag.iloc[4]) is False
+    assert pd.isna(flag.iloc[5])
+
+    perf = views["performance"]
+    crowd_2025 = perf.loc[(perf["Company"] == "CrowdStrike") & (perf["Fiscal_Year"] == 2025)].iloc[0]
+    assert crowd_2025["Cash_Conversion_Ratio"] == -90.659
+    assert bool(crowd_2025["Cash_Conversion_Meaningful"]) is False
+    crowd_2024 = perf.loc[(perf["Company"] == "CrowdStrike") & (perf["Fiscal_Year"] == 2024)].iloc[0]
+    assert crowd_2024["Cash_Conversion_Ratio"] == 16.157
+    assert bool(crowd_2024["Cash_Conversion_Meaningful"]) is False
+    adobe_2025 = perf.loc[(perf["Company"] == "Adobe") & (perf["Fiscal_Year"] == 2025)].iloc[0]
+    assert bool(adobe_2025["Cash_Conversion_Meaningful"]) is True
+
+    shown = perf.loc[perf["Company"] == "CrowdStrike", ["Company", "Fiscal_Year", "Cash_Conversion_Ratio", "Cash_Conversion_Meaningful"]].copy()
+    from app import attach_cash_conversion_display
+
+    displayed = attach_cash_conversion_display(shown)
+    fy2025 = displayed.loc[displayed["Fiscal_Year"] == 2025].iloc[0]
+    assert fy2025["Cash_Conversion_Display"] == "n/m"
+    assert fy2025["Cash_Conversion_Ratio"] == -90.659
+    assert "CrowdStrike FY2025" in cash_nm_labels(displayed)
+
+
+def test_latest_peer_year_is_not_mixed(views):
+    snapshot, label = peer_snapshot(views["peer_metrics"], "Latest")
+    assert snapshot["Fiscal_Year"].nunique() == 1
+    assert int(snapshot["Fiscal_Year"].iloc[0]) == 2025
+    assert label == "FY2025"
+    assert set(snapshot["Company"]) == set(views["peer_metrics"]["Company"])
+
+
+def test_glossary_states_the_decisions():
+    text = " ".join(str(term["meaning"]) + " " + str(term["calculation"]) for term in TERMS)
+    text += " " + " ".join(METHODOLOGY_NOTES)
+    assert "n/m" in text
+    assert "CrowdStrike" in CROWDSTRIKE_DEBT_NOTE and "FY2021" in CROWDSTRIKE_DEBT_NOTE
+    assert "Total_Liabilities" in AMD_LIABILITIES_NOTE
+    assert "Buybacks inflate Apple" in APPLE_ROE_CAVEAT
+    assert "average balances" in ROA_ROE_NOTE
+    assert "greater than 5" in CASH_CONVERSION_NOTE
+    assert "NULLS LAST" in text
+    assert "method='min'" in text
+    for note in (ROA_ROE_NOTE, APPLE_ROE_CAVEAT, CASH_CONVERSION_NOTE, CROWDSTRIKE_DEBT_NOTE, AMD_LIABILITIES_NOTE):
+        assert note in text

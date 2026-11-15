@@ -25,7 +25,9 @@ def test_sql_documents_rank_and_threshold_rules():
     assert "Operating_Expense_to_Revenue ASC NULLS LAST" in peer_sql
     assert "Growth_Differential_Rank" not in peer_sql
     assert "abs(b.Cash_Flow_from_Operating_Activities / b.Net_Income) > 5" in performance_sql
-    assert "Company = 'AMD' AND Total_Liabilities IS NULL" in health_sql
+    assert "sec_company_financials_clean" in health_sql
+    assert "Metric = 'Total_Liabilities'" in health_sql
+    assert "WHEN c.Company = 'AMD' AND r.Company IS NULL" in health_sql
     assert "Short_Term_Debt IS NOT NULL" in health_sql
     assert "ON p.Company = pb.Company" in summary_sql
     assert "p.Fiscal_Year = pb.Fiscal_Year" not in summary_sql

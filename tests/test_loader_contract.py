@@ -142,3 +142,30 @@ def test_databricks_cursor_matches_local_contract(monkeypatch, views):
         pd.testing.assert_frame_equal(loaded[key], local[key], check_dtype=True, check_exact=False, rtol=1e-6, atol=1e-4)
         assert list(loaded[key].columns) == list(local[key].columns)
         assert list(loaded[key].dtypes.astype(str)) == list(local[key].dtypes.astype(str))
+
+
+def test_loader_does_not_infer_the_imputation_flag(monkeypatch, views):
+    """A warehouse frame keeps the flag the view returned, filled value or not."""
+    raw = {key: _warehouse_shape(views[key]) for key in DATABRICKS_VIEWS}
+    health = raw["financial_health"].copy()
+    amd = health["company"] == "AMD"
+    health.loc[amd, "total_liabilities"] = health.loc[amd, "total_assets"] - health.loc[amd, "total_stockholders_equity"]
+    health.loc[amd, "total_liabilities_imputed"] = True
+    health.loc[~amd, "total_liabilities_imputed"] = False
+    raw["financial_health"] = health
+    cursor = _Cursor({DATABRICKS_VIEWS[key]: raw[key] for key in DATABRICKS_VIEWS})
+    monkeypatch.setenv("DATABRICKS_SERVER_HOSTNAME", "warehouse.example.com")
+    monkeypatch.setenv("DATABRICKS_HTTP_PATH", "/sql/warehouses/test")
+    monkeypatch.setenv("DATABRICKS_TOKEN", "test-token")
+    monkeypatch.setattr("src.data_source._connect_databricks", lambda: _Connection(cursor))
+    loaded = load_views()
+    flagged = loaded["financial_health"]
+    assert flagged.loc[flagged["Company"] == "AMD", "Total_Liabilities_Imputed"].map(bool).all()
+    assert not flagged.loc[flagged["Company"] != "AMD", "Total_Liabilities_Imputed"].map(bool).any()
+
+    health.loc[amd, "total_liabilities_imputed"] = False
+    raw["financial_health"] = health
+    cleared = _Cursor({DATABRICKS_VIEWS[key]: raw[key] for key in DATABRICKS_VIEWS})
+    monkeypatch.setattr("src.data_source._connect_databricks", lambda: _Connection(cleared))
+    kept = load_views()
+    assert not kept["financial_health"]["Total_Liabilities_Imputed"].map(bool).any()

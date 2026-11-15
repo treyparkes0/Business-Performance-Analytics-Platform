@@ -10,6 +10,11 @@ casing, and dtypes. peer_metrics is the underlying values for every
 fiscal year. peer_benchmarking is the FY2025 rank table. performance is
 the full performance view. company_operations and company_cash_flow are
 the same column subsets of that view on both paths.
+
+Total_Liabilities_Imputed is computed inside the financial_health view
+from the long facts table, not inside this loader. A wide-table fill of
+AMD liabilities does not change the flag, and this loader does not infer
+one from assets minus equity.
 """
 
 from __future__ import annotations

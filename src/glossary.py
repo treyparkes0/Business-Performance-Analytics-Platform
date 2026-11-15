@@ -26,8 +26,10 @@ PRIOR_TICKER = "Prior year is the previous fiscal year for the same ticker."
 
 AMD_LIABILITIES_NOTE = (
     "AMD total liabilities are imputed as total assets minus stockholders' equity "
-    "because AMD companyfacts has no Total_Liabilities tag. Total_Liabilities_Imputed "
-    "is true on those rows. Other companies are not imputed."
+    "because the clean facts table has no Total_Liabilities row for AMD. "
+    "Total_Liabilities_Imputed stays true after the wide table is filled. "
+    "A reported fact is not imputed, and assets minus equity is not treated as proof. "
+    "Other companies are not imputed."
 )
 CROWDSTRIKE_DEBT_NOTE = (
     "CrowdStrike short-term debt is unreported for FY2021 through FY2026 and is treated as 0 "
@@ -174,7 +176,7 @@ TERMS: list[dict[str, str | list[str]]] = [
         AMD_LIABILITIES_NOTE,
         CALCULATED,
         [VIEW_HEALTH],
-        "True when Company is AMD and Total Liabilities was null in the source extract.",
+        "True when Company is AMD and the clean facts table has no Total_Liabilities row for that company-year. A filled wide value does not clear it.",
     ),
     _term(
         "Total_Stockholders_Equity",

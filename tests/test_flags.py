@@ -3,7 +3,13 @@
 import pandas as pd
 
 from app import cash_nm_labels, peer_snapshot
-from src.bp_metrics import CASH_CONVERSION_ABS_THRESHOLD, cash_conversion_meaningful, impute_amd_liabilities
+from src.bp_metrics import (
+    CASH_CONVERSION_ABS_THRESHOLD,
+    WIDE_CSV,
+    cash_conversion_meaningful,
+    financial_health,
+    impute_amd_liabilities,
+)
 from src.glossary import (
     AMD_LIABILITIES_NOTE,
     APPLE_ROE_CAVEAT,
@@ -34,6 +40,62 @@ def test_imputation_is_limited_to_amd_nulls():
     again = impute_amd_liabilities(out)
     assert bool(again.loc[0, "Total_Liabilities_Imputed"]) is True
     assert again.loc[0, "Total_Liabilities"] == 60
+
+
+def test_prefilled_wide_table_keeps_the_flag_when_the_fact_is_absent():
+    """The Databricks UPDATE can fill AMD liabilities before the view runs."""
+    frame = pd.DataFrame(
+        {
+            "Company": ["AMD", "Apple"],
+            "Fiscal_Year": [2025, 2025],
+            "Total_Assets": [100.0, 80.0],
+            "Total_Stockholders_Equity": [40.0, 50.0],
+            "Total_Liabilities": [60.0, 30.0],
+        }
+    )
+    without_facts = impute_amd_liabilities(frame)
+    assert bool(without_facts.loc[0, "Total_Liabilities_Imputed"]) is False
+    assert without_facts.loc[0, "Total_Liabilities"] == 60
+
+    reported = {("Apple", 2025)}
+    with_facts = impute_amd_liabilities(frame, reported_keys=reported)
+    assert bool(with_facts.loc[0, "Total_Liabilities_Imputed"]) is True
+    assert with_facts.loc[0, "Total_Liabilities"] == 60
+    assert bool(with_facts.loc[1, "Total_Liabilities_Imputed"]) is False
+
+
+def test_reported_fact_is_not_inferred_from_the_accounting_identity():
+    frame = pd.DataFrame(
+        {
+            "Company": ["AMD", "AMD"],
+            "Fiscal_Year": [2024, 2025],
+            "Total_Assets": [100.0, 100.0],
+            "Total_Stockholders_Equity": [40.0, 40.0],
+            "Total_Liabilities": [60.0, pd.NA],
+        }
+    )
+    reported = {("AMD", 2024), ("AMD", 2025)}
+    out = impute_amd_liabilities(frame, reported_keys=reported)
+    assert bool(out.loc[0, "Total_Liabilities_Imputed"]) is False
+    assert out.loc[0, "Total_Liabilities"] == 60
+    assert bool(out.loc[1, "Total_Liabilities_Imputed"]) is False
+    assert pd.isna(out.loc[1, "Total_Liabilities"])
+
+
+def test_health_flag_follows_facts_after_the_wide_table_is_filled():
+    wide = pd.read_csv(WIDE_CSV)
+    amd = wide["Company"] == "AMD"
+    wide.loc[amd, "Total_Liabilities"] = (
+        wide.loc[amd, "Total_Assets"] - wide.loc[amd, "Total_Stockholders_Equity"]
+    )
+    assert wide.loc[amd, "Total_Liabilities"].notna().all()
+    health = financial_health(wide, reported_keys={("Apple", 2025)})
+    assert health.loc[health["Company"] == "AMD", "Total_Liabilities_Imputed"].map(bool).all()
+    apple = health.loc[(health["Company"] == "Apple") & (health["Fiscal_Year"] == 2025)].iloc[0]
+    assert bool(apple["Total_Liabilities_Imputed"]) is False
+    reported_years = {(str(company), int(year)) for company, year in zip(wide["Company"], wide["Fiscal_Year"])}
+    reported_health = financial_health(wide, reported_keys=reported_years)
+    assert not reported_health["Total_Liabilities_Imputed"].map(bool).any()
 
 
 def test_source_flags(views):

@@ -39,9 +39,12 @@ Debt
     unreported for FY2021–FY2026 and is treated as 0.
 
 Liabilities
-    Only AMD null Total_Liabilities are replaced with assets minus equity,
-    because AMD companyfacts has no Total_Liabilities tag.
-    Total_Liabilities_Imputed marks those rows.
+    AMD liabilities are imputed only when the long facts table has no
+    Total_Liabilities row for that company-year. The amount is assets minus
+    equity. Filling the wide table afterward does not clear the flag.
+    A reported fact is not imputed, even when the amount equals assets minus
+    equity. With no facts table, a null wide value is the only provenance.
+    Equality of assets and liabilities plus equity is not proof.
 """
 
 from __future__ import annotations
@@ -52,6 +55,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 WIDE_CSV = ROOT / "data" / "processed" / "company_financials_wide.csv"
+CLEAN_FACTS_CSV = ROOT / "data" / "processed" / "sec_company_financials_clean.csv"
 PEER_YEAR = 2025
 CASH_CONVERSION_ABS_THRESHOLD = 5
 
@@ -314,25 +318,78 @@ def cash_conversion_meaningful(net_income: pd.Series, operating_cash_flow: pd.Se
     return flag.astype("boolean")
 
 
-def impute_amd_liabilities(df: pd.DataFrame) -> pd.DataFrame:
-    """Fill AMD null total liabilities with assets minus equity. Leave every other company alone."""
+def load_liability_fact_keys(path: Path | None = None) -> set[tuple[str, int]] | None:
+    """Company-years with a Total_Liabilities fact.
+
+    None means the long extract is not available. Callers must not invent
+    provenance from assets minus equity.
+    """
+    csv_path = path or CLEAN_FACTS_CSV
+    if not csv_path.exists():
+        return None
+    facts = pd.read_csv(csv_path)
+    required = {"Company", "Fiscal_Year", "Metric"}
+    if not required.issubset(facts.columns):
+        return None
+    rows = facts.loc[facts["Metric"] == "Total_Liabilities", ["Company", "Fiscal_Year"]]
+    years = pd.to_numeric(rows["Fiscal_Year"], errors="coerce")
+    return {
+        (str(company), int(year))
+        for company, year in zip(rows["Company"], years, strict=True)
+        if pd.notna(year)
+    }
+
+
+def impute_amd_liabilities(
+    df: pd.DataFrame,
+    reported_keys: set[tuple[str, int]] | None = None,
+) -> pd.DataFrame:
+    """Impute AMD total liabilities from source provenance.
+
+    reported_keys lists company-years whose long extract has a Total_Liabilities
+    fact. AMD years absent from that set are imputed even when the wide value
+    was already filled. A fact blocks imputation. None means the long extract
+    was not supplied: only a null wide value, or a flag already stored on the
+    frame, counts. Assets minus equity is the fill amount, not evidence.
+    """
     out = df.copy()
     if "Total_Liabilities" not in out.columns:
         out["Total_Liabilities_Imputed"] = False
         return out
-    imputed = (out["Company"] == "AMD") & out["Total_Liabilities"].isna()
-    out.loc[imputed, "Total_Liabilities"] = (
-        out.loc[imputed, "Total_Assets"] - out.loc[imputed, "Total_Stockholders_Equity"]
-    )
-    if "Total_Liabilities_Imputed" in df.columns:
-        already = df["Total_Liabilities_Imputed"].fillna(False).astype(bool)
-        out["Total_Liabilities_Imputed"] = already | imputed
+    amd = out["Company"] == "AMD"
+    missing_value = out["Total_Liabilities"].isna()
+    if reported_keys is None:
+        imputed = amd & missing_value
+        if "Total_Liabilities_Imputed" in df.columns:
+            already = df["Total_Liabilities_Imputed"].fillna(False).astype(bool)
+            imputed = already | imputed
     else:
-        out["Total_Liabilities_Imputed"] = imputed
+        if "Fiscal_Year" in out.columns:
+            years = pd.to_numeric(out["Fiscal_Year"], errors="coerce")
+        else:
+            years = pd.Series(pd.NA, index=out.index)
+        reported_flags: list[bool] = []
+        for company, year in zip(out["Company"], years, strict=True):
+            if pd.isna(year):
+                reported_flags.append(False)
+            else:
+                reported_flags.append((str(company), int(year)) in reported_keys)
+        reported = pd.Series(reported_flags, index=out.index)
+        known = years.notna()
+        # A known year uses the fact list. An unknown year falls back to a null value.
+        imputed = (amd & known & ~reported) | (amd & ~known & missing_value)
+    fill = imputed & missing_value
+    out.loc[fill, "Total_Liabilities"] = (
+        out.loc[fill, "Total_Assets"] - out.loc[fill, "Total_Stockholders_Equity"]
+    )
+    out["Total_Liabilities_Imputed"] = imputed.astype(bool)
     return out
 
 
-def load_financials(path: Path | None = None) -> pd.DataFrame:
+def load_financials(
+    path: Path | None = None,
+    reported_keys: set[tuple[str, int]] | None = None,
+) -> pd.DataFrame:
     csv_path = path or WIDE_CSV
     if not csv_path.exists():
         raise FileNotFoundError(
@@ -341,7 +398,9 @@ def load_financials(path: Path | None = None) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
     df["Fiscal_Year"] = pd.to_numeric(df["Fiscal_Year"], errors="coerce").astype("Int64")
     df = df.sort_values(["Company", "Fiscal_Year"], kind="mergesort").reset_index(drop=True)
-    return impute_amd_liabilities(df)
+    if reported_keys is None:
+        reported_keys = load_liability_fact_keys()
+    return impute_amd_liabilities(df, reported_keys=reported_keys)
 
 
 def growth_trend(df: pd.DataFrame) -> pd.DataFrame:
@@ -426,8 +485,11 @@ def _average_or_ending(net_income: pd.Series, ending: pd.Series, prior: pd.Serie
     )
 
 
-def financial_health(df: pd.DataFrame) -> pd.DataFrame:
-    h = impute_amd_liabilities(df)
+def financial_health(
+    df: pd.DataFrame,
+    reported_keys: set[tuple[str, int]] | None = None,
+) -> pd.DataFrame:
+    h = impute_amd_liabilities(df, reported_keys=reported_keys)
     ticker_grp = h.groupby("Ticker", sort=False)
     prior_assets = ticker_grp["Total_Assets"].shift(1)
     prior_equity = ticker_grp["Total_Stockholders_Equity"].shift(1)
@@ -646,10 +708,11 @@ def assemble_views(raw: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
 
 
 def build_views(path: Path | None = None) -> dict[str, pd.DataFrame]:
-    df = load_financials(path)
+    reported_keys = load_liability_fact_keys()
+    df = load_financials(path, reported_keys=reported_keys)
     gt = growth_trend(df)
     perf = performance(df, gt)
-    health = financial_health(df)
+    health = financial_health(df, reported_keys=reported_keys)
     peers = peer_benchmarking(perf, gt, health)
     summary = executive_summary(perf, gt, health, peers)
     return assemble_views(

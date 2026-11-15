@@ -1,36 +1,49 @@
 -- Liquidity, leverage, and returns.
 -- Total debt coalesces a missing short-term or long-term leg to 0. The reported flags stay false when the source was null.
 -- CrowdStrike short-term debt is unreported for FY2021-FY2026 and is treated as 0.
--- AMD null Total_Liabilities are imputed as Total Assets - Total Stockholders' Equity because AMD companyfacts has no Total_Liabilities tag.
--- Other companies are not imputed. Total_Liabilities_Imputed is true only on the AMD rows this expression fills.
--- If a cleaning UPDATE already replaced those nulls, the flag is false because the null is gone. The dollar amount still matches assets minus equity.
+-- AMD total liabilities are imputed as Total Assets - Total Stockholders' Equity when the long facts
+-- table has no Total_Liabilities row for that company-year. That is the source provenance.
+-- The wide-table UPDATE may already have filled those nulls. The flag still follows the missing fact,
+-- not whether company_financials.Total_Liabilities is null now.
+-- A reported Total_Liabilities fact is never imputed, even when the amount equals assets minus equity.
+-- Other companies are not imputed. If the long facts table cannot be read, do not infer the flag.
 -- Primary ROA and ROE use average balances, (current + prior) / 2, partitioned by ticker.
 -- Ending balances are used only when there is no prior year. ROA_Ending and ROE_Ending always use the ending balance.
 -- ROA_Avg and ROE_Avg are null when there is no prior year.
 CREATE OR REPLACE VIEW financial_analytics.analytics.financial_health AS
-WITH source AS (
-    SELECT
+WITH reported_liabilities AS (
+    SELECT DISTINCT
         Company,
-        Ticker,
-        Fiscal_Year,
-        Total_Assets,
-        Total_Stockholders_Equity,
-        Total_Current_Assets,
-        Total_Current_Liabilities,
-        Short_Term_Debt,
-        Long_Term_Debt,
-        Net_Income,
-        Cash_Flow_from_Operating_Activities,
+        Fiscal_Year
+    FROM financial_analytics.clean.sec_company_financials_clean
+    WHERE Metric = 'Total_Liabilities'
+),
+source AS (
+    SELECT
+        c.Company,
+        c.Ticker,
+        c.Fiscal_Year,
+        c.Total_Assets,
+        c.Total_Stockholders_Equity,
+        c.Total_Current_Assets,
+        c.Total_Current_Liabilities,
+        c.Short_Term_Debt,
+        c.Long_Term_Debt,
+        c.Net_Income,
+        c.Cash_Flow_from_Operating_Activities,
         CASE
-            WHEN Company = 'AMD' AND Total_Liabilities IS NULL
-                THEN Total_Assets - Total_Stockholders_Equity
-            ELSE Total_Liabilities
+            WHEN c.Company = 'AMD' AND r.Company IS NULL
+                THEN COALESCE(c.Total_Liabilities, c.Total_Assets - c.Total_Stockholders_Equity)
+            ELSE c.Total_Liabilities
         END AS Total_Liabilities,
         CASE
-            WHEN Company = 'AMD' AND Total_Liabilities IS NULL THEN TRUE
+            WHEN c.Company = 'AMD' AND r.Company IS NULL THEN TRUE
             ELSE FALSE
         END AS Total_Liabilities_Imputed
-    FROM financial_analytics.clean.company_financials
+    FROM financial_analytics.clean.company_financials c
+    LEFT JOIN reported_liabilities r
+        ON c.Company = r.Company
+        AND c.Fiscal_Year = r.Fiscal_Year
 ),
 with_prior AS (
     SELECT

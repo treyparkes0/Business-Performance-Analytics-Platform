@@ -18,7 +18,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.bp_metrics import build_views  # noqa: E402
+from src.bp_metrics import RANKED_METRICS, build_views, impute_amd_liabilities  # noqa: E402
 
 WIDE = ROOT / "data" / "processed" / "company_financials_wide.csv"
 CLEAN = ROOT / "data" / "processed" / "sec_company_financials_clean.csv"
@@ -37,18 +37,8 @@ LATEST_YEAR = {
     "Microsoft": 2026,
     "NVIDIA": 2026,
 }
-# Ranks left out of Average_Rank on purpose in the current view.
-AVERAGE_RANK_COLUMNS = [
-    "Growth_Rate_Rank",
-    "Growth_Differential_Rank",
-    "Operating_Margin_Rank",
-    "Net_Income_Margin_Rank",
-    "Operating_Cash_Flow_Margin_Rank",
-    "Current_Ratio_Rank",
-    "Debt_to_Equity_Rank",
-    "ROA_Rank",
-    "ROE_Rank",
-]
+# Average_Rank is the equal-weight mean of these nine ranks. Nothing else.
+AVERAGE_RANK_COLUMNS = [rank_col for _value, _higher, rank_col in RANKED_METRICS]
 
 
 def _r3(series: pd.Series) -> pd.Series:
@@ -64,9 +54,8 @@ class Phase1SqlMetricsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.wide = pd.read_csv(WIDE)
-        cls.clean = pd.read_csv(CLEAN)
         cls.views = build_views(WIDE)
-        cls.base = cls.views["company_financials"]
+        cls.base = impute_amd_liabilities(cls.wide.copy())
         cls.growth = cls.views["growth_trend"]
         cls.perf = cls.views["performance"]
         cls.health = cls.views["financial_health"]
@@ -74,10 +63,15 @@ class Phase1SqlMetricsTest(unittest.TestCase):
         cls.summary = cls.views["executive_summary"]
 
     def test_clean_file_matches_wide_inputs(self) -> None:
-        self.assertEqual(len(self.clean), 1657)
-        self.assertEqual(int(self.clean["Value"].isna().sum()), 0)
+        self.assertTrue(
+            CLEAN.exists(),
+            f"Missing {CLEAN}. The long SEC extract is not in the repository.",
+        )
+        clean = pd.read_csv(CLEAN)
+        self.assertEqual(len(clean), 1657)
+        self.assertEqual(int(clean["Value"].isna().sum()), 0)
         self.assertEqual(
-            int(self.clean.duplicated(["Company", "Fiscal_Year", "Metric"]).sum()),
+            int(clean.duplicated(["Company", "Fiscal_Year", "Metric"]).sum()),
             0,
         )
         keys = [
@@ -90,7 +84,7 @@ class Phase1SqlMetricsTest(unittest.TestCase):
         ]
         raw = self.wide.copy()
         for metric in keys:
-            facts = self.clean.loc[self.clean["Metric"] == metric, ["Company", "Fiscal_Year", "Value"]]
+            facts = clean.loc[clean["Metric"] == metric, ["Company", "Fiscal_Year", "Value"]]
             merged = facts.merge(raw, on=["Company", "Fiscal_Year"], how="left")
             self.assertTrue(
                 _close(merged["Value"], merged[metric], tol=1.0).all(),
@@ -245,13 +239,24 @@ class Phase1SqlMetricsTest(unittest.TestCase):
             debt=debt,
             de=_r3(debt / ordered["Total_Stockholders_Equity"].replace(0, pd.NA)),
             la=_r3(ordered["Total_Liabilities"] / ordered["Total_Assets"].replace(0, pd.NA)),
-            roe=_r3(ordered["Net_Income"] / ordered["Total_Stockholders_Equity"].replace(0, pd.NA)),
-            roa=_r3(ordered["Net_Income"] / ordered["Total_Assets"].replace(0, pd.NA)),
-            roa_avg=_r3(ordered["Net_Income"] / ((ordered["Total_Assets"] + prior_assets) / 2)),
-            roe_avg=_r3(
-                ordered["Net_Income"]
-                / ((ordered["Total_Stockholders_Equity"] + prior_equity) / 2)
-            ),
+            roa_ending_raw=ordered["Net_Income"] / ordered["Total_Assets"].replace(0, pd.NA),
+            roe_ending_raw=ordered["Net_Income"]
+            / ordered["Total_Stockholders_Equity"].replace(0, pd.NA),
+            roa_avg_raw=ordered["Net_Income"] / ((ordered["Total_Assets"] + prior_assets) / 2),
+            roe_avg_raw=ordered["Net_Income"]
+            / ((ordered["Total_Stockholders_Equity"] + prior_equity) / 2),
+            roa_uses_ending=prior_assets.isna(),
+            roe_uses_ending=prior_equity.isna(),
+        )
+        expected["roa_ending"] = _r3(expected["roa_ending_raw"])
+        expected["roe_ending"] = _r3(expected["roe_ending_raw"])
+        expected["roa_avg"] = _r3(expected["roa_avg_raw"])
+        expected["roe_avg"] = _r3(expected["roe_avg_raw"])
+        expected["roa"] = _r3(
+            expected["roa_avg_raw"].where(~expected["roa_uses_ending"], expected["roa_ending_raw"])
+        )
+        expected["roe"] = _r3(
+            expected["roe_avg_raw"].where(~expected["roe_uses_ending"], expected["roe_ending_raw"])
         )
         got = self.health.merge(
             expected[
@@ -262,10 +267,14 @@ class Phase1SqlMetricsTest(unittest.TestCase):
                     "debt",
                     "de",
                     "la",
-                    "roe",
-                    "roa",
+                    "roe_ending",
+                    "roa_ending",
                     "roa_avg",
                     "roe_avg",
+                    "roa",
+                    "roe",
+                    "roa_uses_ending",
+                    "roe_uses_ending",
                 ]
             ],
             on=["Company", "Fiscal_Year"],
@@ -275,14 +284,18 @@ class Phase1SqlMetricsTest(unittest.TestCase):
             ("Total_Debt", "debt"),
             ("debt_to_equity_ratio", "de"),
             ("Liabilities_to_Assets", "la"),
-            ("ROE", "roe"),
-            ("ROA", "roa"),
+            ("ROE_Ending", "roe_ending"),
+            ("ROA_Ending", "roa_ending"),
             ("ROA_Avg", "roa_avg"),
             ("ROE_Avg", "roe_avg"),
+            ("ROA", "roa"),
+            ("ROE", "roe"),
         ]
         for actual, expect in pairs:
             tol = 1.0 if actual == "Total_Debt" else 0.0005
             self.assertTrue(_close(got[actual], got[expect], tol=tol).all(), actual)
+        self.assertTrue(got["ROA_Uses_Ending_Balance"].eq(got["roa_uses_ending"]).all())
+        self.assertTrue(got["ROE_Uses_Ending_Balance"].eq(got["roe_uses_ending"]).all())
         self.assertTrue(self.wide.loc[self.wide["Company"] == "CrowdStrike", "Short_Term_Debt"].isna().all())
         crwd = got.loc[got["Company"] == "CrowdStrike", ["Fiscal_Year", "Total_Debt"]].merge(
             self.base.loc[self.base["Company"] == "CrowdStrike", ["Fiscal_Year", "Long_Term_Debt"]],
@@ -294,24 +307,32 @@ class Phase1SqlMetricsTest(unittest.TestCase):
         self.assertEqual(len(self.peers), 6)
         self.assertTrue((self.peers["Fiscal_Year"] == 2025).all())
         rank_cols = [c for c in self.peers.columns if c.endswith("_Rank") and c != "Average_Rank"]
-        self.assertEqual(len(rank_cols), 11)
+        self.assertEqual(rank_cols, AVERAGE_RANK_COLUMNS)
+        self.assertEqual(len(rank_cols), 9)
+        for obsolete in (
+            "Growth_Differential_Rank",
+            "Operating_Expense_Growth_Rank",
+            "Liabilities_to_Assets_Rank",
+        ):
+            self.assertNotIn(obsolete, self.peers.columns)
         for col in rank_cols:
             self.assertTrue(self.peers[col].between(1, 6).all(), col)
         expected_avg = _r3(self.peers[AVERAGE_RANK_COLUMNS].sum(axis=1) / 9.0)
         self.assertTrue(_close(self.peers["Average_Rank"], expected_avg).all())
         nvidia = self.peers.loc[self.peers["Company"] == "NVIDIA"].iloc[0]
-        self.assertEqual(float(nvidia["Average_Rank"]), 1.778)
-        self.assertEqual(float(nvidia["Operating_Expense_Growth_Rank"]), 6.0)
-        self.assertEqual(float(nvidia["Liabilities_to_Assets_Rank"]), 2.0)
+        self.assertEqual(float(nvidia["Average_Rank"]), 1.222)
+        self.assertEqual(float(nvidia["Operating_Expense_to_Revenue_Rank"]), 1.0)
+        self.assertEqual(float(nvidia["Debt_to_Equity_Rank"]), 2.0)
 
-    def test_executive_summary_latest_year_drops_fy2026_ranks(self) -> None:
+    def test_executive_summary_keeps_fy2025_ranks_on_later_rows(self) -> None:
         self.assertEqual(len(self.summary), 6)
-        years = dict(zip(self.summary["Company"], self.summary["Fiscal_Year"]))
+        years = dict(zip(self.summary["Company"], self.summary["Fiscal_Year"].astype(int)))
         self.assertEqual(years, LATEST_YEAR)
-        shared = self.summary["Company"].isin(["AMD", "Adobe", "Apple"])
-        self.assertTrue(self.summary.loc[shared, "Growth_Rate_Rank"].notna().all())
+        self.assertTrue(self.summary["Benchmark_Fiscal_Year"].astype(int).eq(2025).all())
+        self.assertTrue(self.summary["FY2025_Growth_Rate_Rank"].notna().all())
+        self.assertTrue(self.summary["FY2025_Average_Rank"].notna().all())
         later = self.summary["Company"].isin(["Microsoft", "NVIDIA", "CrowdStrike"])
-        self.assertTrue(self.summary.loc[later, "Growth_Rate_Rank"].isna().all())
+        self.assertTrue(self.summary.loc[later, "Fiscal_Year"].astype(int).eq(2026).all())
         self.assertTrue(self.summary.loc[later, "Growth_Rate"].notna().all())
 
 

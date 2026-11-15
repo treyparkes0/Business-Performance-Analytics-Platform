@@ -1,7 +1,0 @@
-﻿Company,Fiscal_Year,Growth_Rate,Growth_Rate_Rank,Operating_Margin_pct,Operating_Margin_Rank,Net_Income_Margin_pct,Net_Income_Margin_Rank,Operating_Expense_to_Revenue,Operating_Expense_to_Revenue_Rank,Operating_Cash_Flow_Margin_pct,Operating_Cash_Flow_Margin_Rank,Current_ratio,Current_Ratio_Rank,debt_to_equity_ratio,Debt_to_Equity_Rank,ROA,ROA_Rank,ROE,ROE_Rank,Average_Rank
-NVIDIA,2025,1.142,1,0.624,1,0.558,1,0.126,1,0.491,1,4.44,1,0.107,2,0.822,1,1.192,2,1.222
-Microsoft,2025,0.149,4,0.456,2,0.361,2,0.232,3,0.483,2,1.353,4,0.126,3,0.18,4,0.333,4,3.111
-AMD,2025,0.343,2,0.107,5,0.125,5,0.389,4,0.223,6,2.85,2,0.051,1,0.059,5,0.072,5,3.889
-Adobe,2025,0.105,5,0.366,3,0.3,3,0.526,5,0.422,3,0.996,5,0.534,5,0.239,3,0.554,3,3.889
-Apple,2025,0.064,6,0.32,4,0.269,4,0.149,2,0.268,5,0.893,6,1.23,6,0.309,2,1.714,1,4
-CrowdStrike,2025,0.294,3,-0.029,6,-0.004,6,0.779,6,0.349,4,1.766,3,0.227,4,-0.002,6,-0.005,6,4.889

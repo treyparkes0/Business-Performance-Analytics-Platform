@@ -48,6 +48,12 @@ CASH_CONVERSION_NOTE = (
     "a small net loss against large operating cash flow produces a ratio near -90.7, which is not a comparable conversion rate. "
     "The raw ratio remains on Cash_Conversion_Ratio."
 )
+FREE_CASH_FLOW_NOTE = (
+    "The company reads use operating cash flow. Free cash flow is operating cash flow minus capital expenditures. "
+    "Capital expenditures are stored as positive SEC payments. "
+    "Free cash flow is left blank when capital expenditures are missing, including NVIDIA FY2021. It is not filled with zero. "
+    "It is calculated in the performance view and is not shown as a lead metric."
+)
 ROA_ROE_NOTE = (
     "Primary ROA and ROE use average balances, (ending balance + prior-year balance) / 2. "
     "Ending balances are used only when there is no prior year, and ROA_Uses_Ending_Balance or "
@@ -61,6 +67,7 @@ METHODOLOGY_NOTES = [
     CASH_CONVERSION_NOTE,
     CROWDSTRIKE_DEBT_NOTE,
     AMD_LIABILITIES_NOTE,
+    FREE_CASH_FLOW_NOTE,
     RANK_TIE_RULE,
     RANK_MISSING_RULE,
 ]
@@ -351,22 +358,6 @@ TERMS: list[dict[str, str | list[str]]] = [
         f"A ratio equal to {CASH_CONVERSION_ABS_THRESHOLD} stays meaningful. The displayed value is n/m when this flag is false.",
     ),
     _term(
-        "Free_Cash_Flow",
-        "Free Cash Flow",
-        "Operating cash left after capital expenditures.",
-        CALCULATED,
-        [VIEW_OVERVIEW, VIEW_CASH],
-        f"Operating Cash Flow − Capital Expenditures. {ROUND}",
-    ),
-    _term(
-        "Free_Cash_Flow_Margin_pct",
-        "Free Cash Flow Margin",
-        "Free cash flow as a share of revenue.",
-        CALCULATED,
-        [VIEW_CASH],
-        f"Free Cash Flow / Revenue. {ROUND}",
-    ),
-    _term(
         "Total_Debt",
         "Total Debt",
         "Interest-bearing debt used in the debt-to-equity ratio. A missing leg is 0. The reported flags say whether that 0 was actually reported.",
@@ -561,7 +552,10 @@ TERMS: list[dict[str, str | list[str]]] = [
     _term(
         "Average_Rank",
         "Average Rank",
-        "Equal-weight average of the nine FY2025 peer ranks. Lower average means stronger overall standing in that benchmark year. It is context, not a single winner score. The same nine ranks are attached to every executive-summary row, including FY2026, and labeled as FY2025 ranks.",
+        "Equal-weight average of the nine FY2025 peer ranks. A lower average is stronger on those metrics. "
+        "These companies are in different technology subsectors and do not share one business model, "
+        "so the average is a descriptive comparison, not a ranking of which company is best. "
+        "The same nine ranks are attached to every executive-summary row, including FY2026, and labeled as FY2025 ranks.",
         CALCULATED,
         [VIEW_PEERS, VIEW_OVERVIEW],
         "Average of revenue growth, operating margin, net income margin, operating expense / revenue, OCF margin, current ratio, debt-to-equity, primary ROA, and primary ROE ranks. "

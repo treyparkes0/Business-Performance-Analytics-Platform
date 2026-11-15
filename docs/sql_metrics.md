@@ -5,6 +5,16 @@ Formulas for the five views. The SQL is in `Business Performance Analytics.ipynb
 Source table: `financial_analytics.clean.company_financials`  
 Local file: `data/processed/company_financials_wide.csv` (33 company-years, fiscal 2021 onward)
 
+## From the extract to the notebook
+
+`extract_sec_company_facts.py` writes three files:
+
+- `data/raw/sec_company_financials_raw.csv`
+- `data/processed/sec_company_financials_clean.csv`
+- `data/processed/company_financials_wide.csv`
+
+The notebook starts from `financial_analytics.clean.company_financials` and `financial_analytics.clean.sec_company_financials_clean`. Those are the warehouse copies of the prepared files. The notebook does not contain the upload step. Local Python reads the wide CSV and the clean facts file directly. Missing values stay null in both places.
+
 ## What is calculated in SQL
 
 Inputs that stay as reported facts: revenue, gross profit, operating income, net income, operating expenses, operating cash flow, capital expenditures, and the balance-sheet amounts. Everything below is calculated.
@@ -119,6 +129,6 @@ Live Company Facts values matched the stored facts for:
 | Microsoft | 2026 | NetIncomeLoss | 133,749,000,000 |
 | NVIDIA | 2021 | Assets | 28,791,000,000 |
 
-CrowdStrike revenue uses the tag that includes assessed tax because the excluding-tax tag is not in its facts. Capital expenditures are stored as positive SEC payments, and free cash flow subtracts them from operating cash flow.
+CrowdStrike revenue uses the tag that includes assessed tax because the excluding-tax tag is not in its facts. Capital expenditures are stored as positive SEC payments, and free cash flow subtracts them from operating cash flow. Free cash flow is null when capital expenditures are missing, including NVIDIA FY2021. The company reads use operating cash flow. Free cash flow stays in the performance view and is not a lead metric in the application.
 
 The app and these tests read `data/processed/`. The notebook and `src/bp_metrics.py` both round to 3 decimals. The loader returns `Company` and `Fiscal_Year` even if a warehouse cursor uses different casing.

@@ -5,6 +5,4 @@ databricks-sql-connector>=4.0.0
 streamlit>=1.32.0
 plotly>=5.18.0
 jinja2>=3.1.6
-openpyxl>=3.1.0
-pywin32>=306; sys_platform == "win32"
 pytest>=8.0.0

@@ -15,6 +15,7 @@ from src.glossary import (
     APPLE_ROE_CAVEAT,
     CASH_CONVERSION_NOTE,
     CROWDSTRIKE_DEBT_NOTE,
+    FREE_CASH_FLOW_NOTE,
     METHODOLOGY_NOTES,
     ROA_ROE_NOTE,
     TERMS,
@@ -190,6 +191,9 @@ def test_glossary_states_the_decisions():
     assert "Buybacks inflate Apple" in APPLE_ROE_CAVEAT
     assert "average balances" in ROA_ROE_NOTE
     assert "greater than 5" in CASH_CONVERSION_NOTE
+    assert "NVIDIA FY2021" in FREE_CASH_FLOW_NOTE
+    assert "not filled with zero" in FREE_CASH_FLOW_NOTE
+    assert FREE_CASH_FLOW_NOTE in text
     assert "NULLS LAST" in text
     assert "method='min'" in text
     for note in (ROA_ROE_NOTE, APPLE_ROE_CAVEAT, CASH_CONVERSION_NOTE, CROWDSTRIKE_DEBT_NOTE, AMD_LIABILITIES_NOTE):

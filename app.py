@@ -1,4 +1,4 @@
-"""Internal Strategy & Operations analytics application."""
+"""Business performance review of six technology companies, using SEC annual filings."""
 
 from __future__ import annotations
 
@@ -439,13 +439,21 @@ def executive_page(views: dict[str, pd.DataFrame], company: str, year_label: str
             year = int(lead["Fiscal_Year"].iloc[0])
             st.caption(
                 f"Latest reported year, FY{year}. "
-                f"The average rank is the FY{PEER_YEAR} comparison, including when the latest year is later."
+                f"The average rank is the FY{PEER_YEAR} comparison, including when the latest year is later. "
+                "It compares companies in different technology subsectors. It is not a ranking of which company is best."
             )
             render_kpis(lead, LEAD_LABELS)
             finding = notes.EXECUTIVE.get(company, {}).get("Management Attention", "")
             if finding:
                 show_data_notes(finding, "Latest")
             show_attention_line(company)
+    else:
+        show_data_notes(notes.CONCLUSION, "All")
+        st.caption(
+            "The FY2025 average rank is a descriptive comparison. "
+            "These companies are in different technology subsectors and do not share one business model. "
+            "A lower average rank is stronger on the nine metrics. It is not a ranking of which company is best."
+        )
     category = st.selectbox("Metric category", list(KPI_GROUPS.keys()), index=0, key="metric_category")
     frame = kpi_source(views, company, year_label)
     render_overview_kpis(frame, KPI_GROUPS[category], year_label)
@@ -519,7 +527,7 @@ def performance_page(views: dict[str, pd.DataFrame], company: str, year_label: s
                 fig.update_yaxes(tickformat=".0%", title="Rate")
                 fig.update_xaxes(dtick=1, title="Fiscal Year")
                 fig.update_layout(**CHART_LAYOUT)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
         with c2:
             metric_chart(
                 data, "Growth_Differential", "Growth rate change (percentage points)", percent=True, year_label=year_label
@@ -650,6 +658,7 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
         "Positive operating cash flow does not automatically mean profitability is strong. "
         "Compare cash trends with net income on this page."
     )
+    st.caption(glossary_notes.FREE_CASH_FLOW_NOTE)
     if not is_single_snapshot(company, year_label):
         c1, c2 = st.columns(2)
         with c1:
@@ -824,7 +833,9 @@ def peer_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
         st.caption(
             "Each value sits next to its FY2025 rank. "
             f"Average rank uses those nine metrics for FY{PEER_YEAR} only, including on companies whose latest year is later. "
-            "It is context, not a single winner score."
+            "These companies are in different technology subsectors and do not share one business model. "
+            "The average is a descriptive comparison, not a ranking of which company is best. "
+            "A lower average rank is stronger on these nine metrics."
         )
         show_table(benchmark, list(benchmark.columns))
         ordered = benchmark.sort_values(["Average_Rank", "Company"], kind="mergesort")
@@ -834,9 +845,8 @@ def peer_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
             f"{low['Company']} has the lowest FY{PEER_YEAR} average rank "
             f"({float(low['Average_Rank']):.3f}). "
             f"{high['Company']} has the highest ({float(high['Average_Rank']):.3f}). "
-            "A lower average rank is stronger."
+            "The company reads are on Overview."
         )
-    show_data_notes(f"{notes.PEER}\n\n{notes.CONCLUSION}", year_label)
 
 
 def glossary_page() -> None:
@@ -907,8 +917,7 @@ def glossary_page() -> None:
 def attention_page(company: str, year_label: str) -> None:
     page_intro(
         "Management Attention",
-        "Surface issues that would cause management to investigate, monitor, or ask a follow-up question. "
-        "Favorable trends are noted for continued monitoring — they are not forced into problems.",
+        "One priority for each company, taken from its latest fiscal-year results.",
         "notebook interpretations",
     )
     if str(year_label) not in {"All", "Latest", "2024", "2025", "2026"}:
@@ -934,6 +943,8 @@ def attention_page(company: str, year_label: str) -> None:
               <p>{alert["signal"]}</p>
               <p class="alert-k">Why it matters</p>
               <p>{alert["why"]}</p>
+              <p class="alert-k">Trend</p>
+              <p>{alert["trend"]}</p>
               <p class="alert-k">Management attention</p>
               <p>{alert["attention"]}</p>
             </div>

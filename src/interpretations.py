@@ -1,193 +1,394 @@
-"""Interpretations from the Databricks notebook. Do not invent new conclusions."""
+"""Company reads for the app. Figures follow the notebook company analysis."""
 
 from __future__ import annotations
 
 GROWTH = {
-    "AMD": "AMD continues to improve its revenue performance, with revenue growth increasing from 13.7% to 34.3%. Its growth differential increased by approximately 21 percentage points, indicating that revenue growth has accelerated rather than slowed.",
-    "Adobe": "Adobe has maintained moderate and stable revenue growth, with growth declining slightly from 10.8% to 10.5%. Its growth differential remained relatively consistent, indicating limited change in its revenue growth trajectory.",
-    "Apple": "Apple’s revenue growth has remained relatively consistent with limited fluctuation. The company has also maintained slightly positive growth momentum, indicating a stable revenue performance profile with gradual improvement in its growth trajectory.",
-    "CrowdStrike": "CrowdStrike has had a moderate growth rate from the prior few years; however they continue to lose momentum, which could be a problem in the future if the company keeps this downward trend.",
-    "Microsoft": "Microsoft's growth rate shows a consistent and stable revenue performance, with relatively little fluctuation in growth acceleration. This suggests that Microsoft has maintained steady revenue growth rather than experiencing significant changes in its growth trajectory.",
-    "NVIDIA": "NVIDIA continues to demonstrate strong top-line growth year over year. However, its growth differential declined by approximately 49 percentage points as revenue growth moderated from 114% to 65%. This reflects a significant normalization from its exceptionally high prior-year growth rate rather than a decline in overall revenue.",
+    "AMD": (
+        "Revenue growth accelerated from 13.7% in FY2024 to 34.3% in FY2025. "
+        "The FY2025 rate was 20.6 percentage points higher than the FY2024 rate. "
+        "Revenue is growing faster, not declining."
+    ),
+    "Adobe": (
+        "Revenue grew 10.5% in FY2025, compared with 10.8% in FY2024. "
+        "The rate eased by 0.3 percentage points. Revenue is still growing, and the pace is relatively stable."
+    ),
+    "Apple": (
+        "Revenue grew 6.4% in FY2025, up from 2.0% in FY2024. "
+        "The FY2025 growth rate improved by 4.4 percentage points from the FY2024 rate."
+    ),
+    "CrowdStrike": (
+        "Revenue is still growing, and the rate has slowed: 36.3% in FY2024, 29.4% in FY2025, and 21.7% in FY2026. "
+        "The slower rate is not a decline in revenue."
+    ),
+    "Microsoft": (
+        "Revenue grew 17.8% in FY2026, up from 14.9% in FY2025. "
+        "The FY2026 growth rate rose by 2.9 percentage points from the FY2025 rate. Revenue is still increasing."
+    ),
+    "NVIDIA": (
+        "Revenue grew 65.5% in FY2026, down from 114.2% in FY2025. "
+        "The FY2026 growth rate fell by 48.7 percentage points from the FY2025 rate. "
+        "Revenue is still growing. The slower rate is a cooldown from an unusually high FY2025, not a decline in revenue."
+    ),
 }
 
 PROFITABILITY = {
-    "AMD": "AMD has maintained relatively stable gross margins while operating income and net income have grown year over year. However, operating income growth has declined significantly from 307% in the prior year, indicating that profitability is still improving but at a slower pace.",
-    "Adobe": "Adobe has maintained a stable yet strong gross margin (89%) while operating and net income have grown year over year. Operating margin suggests that revenue growth is translating into improving profitability.",
-    "Apple": "Apple has maintained a stable gross margin. Operating income grew 8.0% in FY2025, and net income grew 19.5%, from $93.7 billion to $112.0 billion. Earnings grew faster than operating income.",
-    "CrowdStrike": "CrowdStrike has maintained a relatively consistent gross margin over the past several years; however, operating performance has continued to decline, with operating margins falling from -0.6% to -2.9% and then -6.1%. This indicates increasing operating pressure that is negatively affecting profitability.",
-    "Microsoft": "Microsoft’s gross margin has gradually declined while operating income has continued to grow year over year. This suggests that Microsoft is generating stronger operating income despite some pressure on gross profitability.",
-    "NVIDIA": "NVIDIA’s gross margin has fluctuated gradually but remains relatively consistent, while operating margin increased sharply from 54% to 62% before declining to around 60%. Net income growth has also moderated, suggesting that NVIDIA’s exceptional profitability and revenue growth are beginning to normalize after its significant prior-year increase.",
+    "AMD": (
+        "Gross margin was nearly unchanged, 49.4% in FY2024 and 49.5% in FY2025. "
+        "The operating margin rose from 7.4% to 10.7%, and the net income margin rose from 6.4% to 12.5%. "
+        "Operating income grew 94.4% in FY2025 after growing 373.8% in FY2024. Operating income is still rising. "
+        "The lower FY2025 growth rate is not a decline in operating income. "
+        "An operating margin of 10.7% and average-balance ROA of 5.9% are still below Microsoft, Apple, NVIDIA, and Adobe."
+    ),
+    "Adobe": (
+        "Gross margin was 89.3% in FY2025, compared with 89.0% in FY2024. "
+        "The operating margin rose from 31.3% to 36.6%, and the net income margin rose from 25.9% to 30.0%."
+    ),
+    "Apple": (
+        "Gross margin rose from 46.2% in FY2024 to 46.9% in FY2025. "
+        "The operating margin rose from 31.5% to 32.0%. Operating income grew 8.0% in FY2025. "
+        "The net income margin rose from 24.0% to 26.9%. "
+        "Net income grew 19.5%, from $93.7 billion in FY2024 to $112.0 billion in FY2025."
+    ),
+    "CrowdStrike": (
+        "Gross margin was 75.2% in FY2024, 75.0% in FY2025, and 74.7% in FY2026. "
+        "The operating margin went from -0.6% to -2.9% to -6.1%. "
+        "The net income margin went from 2.4% to -0.4% to -3.4%. "
+        "Operating and net margins are negative, and both are weaker than in FY2024."
+    ),
+    "Microsoft": (
+        "Gross margin eased from 68.8% in FY2025 to 67.9% in FY2026. "
+        "The operating margin rose from 45.6% to 46.8%, and the net income margin rose from 36.1% to 40.3%."
+    ),
+    "NVIDIA": (
+        "Gross margin was 71.1% in FY2026, after 75.0% in FY2025 and 72.7% in FY2024. "
+        "The operating margin was 60.4%, after 62.4% in FY2025 and 54.1% in FY2024. "
+        "The net income margin was 55.6%, compared with 55.8% in FY2025."
+    ),
 }
 
 OPERATIONS = {
-    "AMD": "AMD’s operating efficiency improved as revenue grew faster than operating expenses. Operating expenses also fell from 42.0% to 38.9% of revenue, showing that the company is managing its costs more effectively.",
-    "Adobe": "Adobe’s operating efficiency improved significantly in 2025 as operating expense growth slowed to 0.9% while revenue continued to grow. Operating expenses also fell from 57.7% to 52.6% of revenue, showing better cost management.",
-    "Apple": "Apple’s operating expenses have grown faster than revenue in both years, creating some pressure on costs. In 2025, operating expenses grew 1.7 percentage points faster than revenue, while operating expenses remained relatively low at about 15% of revenue.",
-    "CrowdStrike": "CrowdStrike’s operating efficiency has weakened as operating expenses have grown faster than revenue. Operating expenses reached 80.8% of revenue in 2026, showing increasing pressure from operating costs.",
-    "Microsoft": "Microsoft has maintained strong operating efficiency, with revenue growing faster than operating expenses. Operating expenses also fell from 25.1% to 21.2% of revenue, showing that the company is managing its costs effectively.",
-    "NVIDIA": "NVIDIA continues to show strong operating efficiency, with revenue growing much faster than operating expenses. However, the gap has narrowed significantly, suggesting that its cost advantage is becoming less pronounced as the company grows.",
+    "AMD": "Operating expenses fell from 42.0% of revenue in FY2024 to 38.9% in FY2025.",
+    "Adobe": (
+        "Operating-expense growth was 0.9% in FY2025, against revenue growth of 10.5%. "
+        "Operating expenses fell from 57.7% of revenue in FY2024 to 52.6% in FY2025."
+    ),
+    "Apple": (
+        "Operating-expense growth exceeded revenue growth by 1.7 percentage points in FY2025. "
+        "Operating expenses were 14.9% of revenue in FY2025, up from 14.7% in FY2024."
+    ),
+    "CrowdStrike": (
+        "Operating expenses were 75.8% of revenue in FY2024, 77.9% in FY2025, and 80.8% in FY2026. "
+        "In FY2026, operating-expense growth exceeded revenue growth by 4.5 percentage points."
+    ),
+    "Microsoft": (
+        "Operating expenses were 21.2% of revenue in FY2026, down from 23.2% in FY2025 and 25.1% in FY2024. "
+        "In FY2026, revenue growth exceeded operating-expense growth by 10.3 percentage points."
+    ),
+    "NVIDIA": "Operating expenses fell from 12.6% of revenue in FY2025 to 10.7% in FY2026.",
 }
 
 CASH = {
-    "AMD": "AMD’s operating cash flow has strengthened significantly after declining in 2023. Its OCF margin increased to 22.3% in 2025, while operating cash flow grew 153.5%, indicating a strong improvement in cash generation.",
-    "Adobe": "Adobe has maintained strong operating cash generation, with its OCF margin recovering to 42.2% in 2025. Operating cash flow also grew 24.5%, indicating improving cash generation compared with the prior year.",
-    "Apple": "Apple continues to generate strong operating cash flow, but its OCF margin declined to 26.8% in 2025 and operating cash flow fell 5.7%. This indicates some weakening in cash-generation efficiency compared with the prior year.",
-    "CrowdStrike": "CrowdStrike continues to generate positive operating cash flow despite reporting negative net income. However, its OCF margin has declined to 33.5%, indicating that cash generation is becoming less efficient relative to revenue.",
-    "Microsoft": "Microsoft has significantly strengthened its operating cash generation, with its OCF margin increasing to 55.1% in 2026. Operating cash flow also grew 34.4%, indicating strong conversion of revenue into operating cash.",
-    "NVIDIA": "NVIDIA has experienced exceptional growth in operating cash flow, with OCF increasing 60.3% in 2026. Although its OCF margin declined slightly to 47.6%, cash generation remains extremely strong relative to revenue.",
+    "AMD": (
+        "The operating-cash-flow margin rose from 11.8% in FY2024 to 22.3% in FY2025, "
+        "and operating cash flow grew 153.5% in FY2025."
+    ),
+    "Adobe": (
+        "The operating-cash-flow margin rose from 37.5% in FY2024 to 42.2% in FY2025, "
+        "and operating cash flow grew 24.5% in FY2025."
+    ),
+    "Apple": (
+        "Operating cash flow fell 5.7% in FY2025, the same year net income grew 19.5%. "
+        "The operating-cash-flow margin fell from 30.2% in FY2024 to 26.8% in FY2025. "
+        "Cash conversion was 0.995, down from 1.262. Both years are meaningful. "
+        "Operating cash flow was about equal to net income in FY2025, after running above it in FY2024."
+    ),
+    "CrowdStrike": (
+        "Operating cash flow stayed positive. The operating-cash-flow margin was 38.2% in FY2024, "
+        "34.9% in FY2025, and 33.5% in FY2026. Cash conversion is not meaningful because net income is negative. "
+        "The FY2026 net-income growth rate is not a useful read of earnings, because the loss got larger."
+    ),
+    "Microsoft": (
+        "Operating cash flow grew 34.4% in FY2026. "
+        "The operating-cash-flow margin rose from 48.3% in FY2025 to 55.1% in FY2026."
+    ),
+    "NVIDIA": (
+        "The operating-cash-flow margin was 47.6% in FY2026, down from 49.1% in FY2025, "
+        "and operating cash flow grew 60.3% in FY2026. Cash generation is still strong. "
+        "The margin is a little lower than the prior year."
+    ),
 }
 
 HEALTH = {
-    "AMD": "AMD: Current ratio improved from 2.62 to 2.85, while liabilities-to-assets increased slightly from 16.8% to 18.1%. This indicates strong liquidity with a fair increase in balance-sheet obligations.",
-    "Adobe": "Adobe: Current ratio declined slightly below 1.0 in 2025, while debt-to-equity and liabilities-to-assets increased. This indicates weaker short-term liquidity and increasing balance-sheet leverage that may warrant attention. A current ratio below 1.0 is a signal to monitor, not automatically a financial crisis.",
-    "Apple": "Apple: Current ratio remained below 1.0, but debt-to-equity declined substantially from 1.70 to 1.23 and liabilities-to-assets also improved. This is improving leverage with tighter liquidity, not a simple finding that Apple is financially weak. A current ratio below 1.0 is a signal that may warrant attention.",
-    "CrowdStrike": "CrowdStrike: Current ratio remained strong at around 1.8, while debt-to-equity and liabilities-to-assets continued to decline. However, ROA moved into negative territory, indicating that profitability relative to assets has weakened.",
-    "Microsoft": "Microsoft maintained a current ratio above 1.0 while debt-to-equity and liabilities-to-assets declined. ROA remained strong, although it decreased slightly in 2025 before recovering in 2026. These trends indicate that Microsoft maintained strong financial health while reducing its relative reliance on debt and liabilities.",
-    "NVIDIA": "NVIDIA has very strong liquidity and declining leverage, with debt-to-equity falling to 0.054 in FY2026. Average-balance ROA remains exceptionally strong, declining from 82.2% in FY2025 to 75.4% in FY2026. Ending-balance ROA declined from 65.3% to 58.1%.",
+    "AMD": (
+        "The current ratio improved from 2.62 in FY2024 to 2.85 in FY2025. "
+        "Debt-to-equity rose from 0.030 to 0.051. "
+        "Liabilities-to-assets rose from 16.8% to 18.1%. AMD does not report total liabilities, "
+        "so that ratio uses assets minus equity. "
+        "Average-balance ROA rose from 2.4% to 5.9%, and average-balance ROE rose from 2.9% to 7.2%. "
+        "The FY2025 average rank was 3.889, the same as Adobe. That comparison uses FY2025 only."
+    ),
+    "Adobe": (
+        "The current ratio fell from 1.068 in FY2024 to 0.996 in FY2025. "
+        "A current ratio slightly below 1.0 is a liquidity signal, not by itself a crisis. "
+        "Debt-to-equity rose from 0.399 to 0.534, and liabilities-to-assets rose from 53.3% to 60.6%. "
+        "Average-balance ROA rose from 18.5% to 23.9%, and average-balance ROE rose from 36.3% to 55.4%. "
+        "The FY2025 average rank was 3.889, the same as AMD. That comparison uses FY2025 only."
+    ),
+    "Apple": (
+        "Debt-to-equity fell from 1.70 in FY2024 to 1.23 in FY2025, and liabilities-to-assets fell from 84.4% to 79.5%. "
+        "The current ratio rose from 0.867 to 0.893 and remained below 1. "
+        "Average-balance ROA rose from 26.1% to 30.9%. Average-balance ROE rose from 157.4% to 171.4%. "
+        "The high ROE is inflated by buybacks, which shrink equity. "
+        "The FY2025 average rank was 4.000. In FY2025, Apple ranked 6th on revenue growth, "
+        "6th on the current ratio, and 6th on debt-to-equity, and 1st on ROE."
+    ),
+    "CrowdStrike": (
+        "The current ratio was 1.764 in FY2024, 1.766 in FY2025, and 1.773 in FY2026. "
+        "Debt-to-equity fell from 0.322 in FY2024 to 0.227 in FY2025 to 0.168 in FY2026. "
+        "Average-balance ROA went from 1.2% in FY2024 to -0.2% in FY2025 to -1.6% in FY2026. "
+        "The FY2025 average rank was 4.889. That comparison uses FY2025 only."
+    ),
+    "Microsoft": (
+        "The balance sheet stayed conservative and leverage eased. "
+        "The current ratio was 1.353 in FY2025 and 1.230 in FY2026. "
+        "Debt-to-equity fell from 0.126 to 0.091, and liabilities-to-assets fell from 44.5% to 41.7%. "
+        "Average-balance ROA rose from 18.0% to 19.4%, and average-balance ROE rose from 33.3% to 34.0%. "
+        "The FY2025 average rank was 3.111. That comparison uses FY2025 only."
+    ),
+    "NVIDIA": (
+        "The current ratio fell from 4.440 in FY2025 to 3.905 in FY2026 and remains high. "
+        "Debt-to-equity fell from 0.107 to 0.054, and liabilities-to-assets fell from 28.9% to 23.9%. "
+        "Average-balance ROA fell from 82.2% to 75.4%. Ending-balance ROA fell from 65.3% to 58.1%. "
+        "Those two ROA figures use different denominators. The primary figure is the average-balance return. "
+        "Average-balance ROE fell from 119.2% to 101.5%. "
+        "The FY2025 average rank was 1.222. That comparison uses FY2025 only."
+    ),
 }
 
 EXECUTIVE = {
     "AMD": {
-        "Growth": "Revenue growth accelerated from 13.7% to 34.3%.",
-        "Profitability": "Gross margins are relatively stable while operating and net income have grown, though operating-income growth has slowed from a very high prior-year rate.",
-        "Operations": "Revenue is growing faster than operating expenses, and operating expenses fell from 42.0% to 38.9% of revenue.",
-        "Cash Flow": "Operating cash generation strengthened, with OCF margin at 22.3% in 2025 and OCF growth of 153.5%.",
-        "Financial Health": "Liquidity is strong (current ratio 2.62 to 2.85), with a modest increase in liabilities-to-assets.",
-        "Management Attention": "Continue monitoring whether strong growth and cash generation hold as the company scales, and whether revenue continues to outpace operating expenses.",
+        "Growth": GROWTH["AMD"],
+        "Profitability": PROFITABILITY["AMD"],
+        "Operations": OPERATIONS["AMD"],
+        "Cash Flow": CASH["AMD"],
+        "Financial Health": HEALTH["AMD"],
+        "Management Attention": (
+            "Growth, margins, operating cash flow, and returns improved in FY2025. "
+            "Liabilities-to-assets rose from 16.8% to 18.1%, using assets minus equity. "
+            "Investigate what accompanied the acceleration, including that rise. "
+            "The results do not establish the cause."
+        ),
     },
     "Adobe": {
-        "Growth": "Revenue growth is moderate and stable (about 10.8% to 10.5%).",
-        "Profitability": "Gross margin remains strong (about 89%), and operating and net income have grown.",
-        "Operations": "In 2025, operating-expense growth slowed to 0.9% while revenue continued to grow; opex fell from 57.7% to 52.6% of revenue.",
-        "Cash Flow": "Operating cash generation is strong, with OCF margin recovering to 42.2% in 2025.",
-        "Financial Health": "Current ratio declined slightly below 1.0 in 2025 while leverage increased — a liquidity signal that may warrant attention.",
-        "Management Attention": "Monitor the current ratio (1.068 to 0.996) so current assets remain sufficient for short-term obligations.",
+        "Growth": GROWTH["Adobe"],
+        "Profitability": PROFITABILITY["Adobe"],
+        "Operations": OPERATIONS["Adobe"],
+        "Cash Flow": CASH["Adobe"],
+        "Financial Health": HEALTH["Adobe"],
+        "Management Attention": (
+            "Profit and operating cash flow improved in FY2025. Liquidity and leverage moved the other way. "
+            "The current ratio fell from 1.068 to 0.996. "
+            "Investigate what changed in current assets, current liabilities, and debt. "
+            "The results do not establish the cause."
+        ),
     },
     "Apple": {
-        "Growth": "Revenue growth has been relatively consistent, with slightly positive momentum.",
-        "Profitability": "Gross margin is stable. Operating income grew 8.0% in FY2025, and net income grew 19.5%.",
-        "Operations": "Operating expenses grew faster than revenue in both years (1.7 percentage points faster in 2025), while opex stayed near 15% of revenue.",
-        "Cash Flow": "Operating cash flow remains large, but OCF margin declined to 26.8% in 2025 and OCF fell 5.7%.",
-        "Financial Health": "Improving leverage (debt-to-equity 1.70 to 1.23) with tighter liquidity (current ratio still below 1.0).",
-        "Management Attention": "Monitor current assets and short-term liabilities, and whether operating-expense growth continues to outpace revenue.",
+        "Growth": GROWTH["Apple"],
+        "Profitability": PROFITABILITY["Apple"],
+        "Operations": OPERATIONS["Apple"],
+        "Cash Flow": CASH["Apple"],
+        "Financial Health": HEALTH["Apple"],
+        "Management Attention": (
+            "Net income grew 19.5% in FY2025 while operating cash flow fell 5.7%. "
+            "Debt-to-equity improved, and the current ratio stayed below 1. "
+            "Investigate the gap between earnings growth and the decline in operating cash flow, "
+            "and what leaves the current ratio below 1. The results do not establish the cause."
+        ),
     },
     "CrowdStrike": {
-        "Growth": "Growth remains moderate, but momentum has continued to slow.",
-        "Profitability": "Gross margin is relatively consistent, but operating margins moved from -0.6% to -2.9% then -6.1%.",
-        "Operations": "Operating expenses have grown faster than revenue and reached 80.8% of revenue in 2026.",
-        "Cash Flow": "Operating cash flow is still positive despite negative net income, while OCF margin declined to 33.5%.",
-        "Financial Health": "Liquidity remains strong (current ratio around 1.8) and leverage declined, but ROA moved into negative territory.",
-        "Management Attention": "Investigate operating-cost pressure and the decline in net income margin from 2.4% (2024) to -0.4% (2025) and -3.4% (2026).",
+        "Growth": GROWTH["CrowdStrike"],
+        "Profitability": PROFITABILITY["CrowdStrike"],
+        "Operations": OPERATIONS["CrowdStrike"],
+        "Cash Flow": CASH["CrowdStrike"],
+        "Financial Health": HEALTH["CrowdStrike"],
+        "Management Attention": (
+            "Operating expenses reached 80.8% of revenue in FY2026, and the operating margin was -6.1%. "
+            "Revenue was still growing, and operating cash flow stayed positive. "
+            "Investigate which operating costs grew faster than revenue. "
+            "The results do not name those costs."
+        ),
     },
     "Microsoft": {
-        "Growth": "Revenue growth has been consistent and stable, without large swings in acceleration.",
-        "Profitability": "Gross margin has gradually declined while operating income has continued to grow.",
-        "Operations": "Revenue is growing faster than operating expenses; opex fell from 25.1% to 21.2% of revenue.",
-        "Cash Flow": "Operating cash generation strengthened, with OCF margin at 55.1% in 2026 and OCF growth of 34.4%.",
-        "Financial Health": "Current ratio stayed above 1.0 while debt-to-equity and liabilities-to-assets declined.",
-        "Management Attention": "Continue monitoring whether favorable leverage and liquidity trends are maintained.",
+        "Growth": GROWTH["Microsoft"],
+        "Profitability": PROFITABILITY["Microsoft"],
+        "Operations": OPERATIONS["Microsoft"],
+        "Cash Flow": CASH["Microsoft"],
+        "Financial Health": HEALTH["Microsoft"],
+        "Management Attention": (
+            "Gross margin eased from 68.8% to 67.9% in FY2026, while the operating margin rose from 45.6% to 46.8% "
+            "and operating cash flow grew 34.4%. "
+            "Investigate what moved gross margin down and whether the lower expense ratio offset it. "
+            "The results do not establish that cause."
+        ),
     },
     "NVIDIA": {
-        "Growth": "Top-line growth remains strong, though it moderated from 114% to 65% (about a 49 percentage-point decline in the growth differential).",
-        "Profitability": "Operating margin rose from 54% to 62% then eased toward 60%; net-income growth has also moderated.",
-        "Operations": "Revenue still grows much faster than operating expenses, but that gap has narrowed as the company scales.",
-        "Cash Flow": "OCF grew 60.3% in 2026; OCF margin eased slightly to 47.6% and remains very strong relative to revenue.",
-        "Financial Health": "Liquidity is very strong and leverage declined (debt-to-equity 0.054 in FY2026). Average-balance ROA declined from 82.2% in FY2025 to 75.4% in FY2026. Ending-balance ROA declined from 65.3% to 58.1%.",
-        "Management Attention": "Continue monitoring whether profitability and cash generation hold as exceptional revenue growth normalizes.",
+        "Growth": GROWTH["NVIDIA"],
+        "Profitability": PROFITABILITY["NVIDIA"],
+        "Operations": OPERATIONS["NVIDIA"],
+        "Cash Flow": CASH["NVIDIA"],
+        "Financial Health": HEALTH["NVIDIA"],
+        "Management Attention": (
+            "FY2026 revenue growth of 65.5% is slower than 114.2% in FY2025, and revenue is still rising. "
+            "Gross margin fell from 75.0% to 71.1%. Operating profit and operating cash flow are still strong. "
+            "Investigate whether the gross margin, the operating margin, and the operating-cash-flow margin "
+            "hold if revenue growth continues to cool. The results do not show that those margins will fall further."
+        ),
     },
 }
 
 CONCLUSION = (
-    "Overall, the analysis shows that company performance varies significantly across revenue growth, "
-    "profitability, operating efficiency, cash generation, and financial health. NVIDIA and Microsoft "
-    "demonstrated the strongest overall performance, although NVIDIA's exceptionally high revenue growth "
-    "has begun to normalize while Microsoft has maintained more consistent growth and strong financial health.\n\n"
-    "AMD showed improving performance, with stronger revenue growth, improved operating efficiency, and "
-    "significant growth in operating cash flow. Adobe maintained strong profitability and cash generation, "
-    "but its declining short-term liquidity and increasing leverage warrant continued monitoring. Apple "
-    "continued to demonstrate strong profitability and cash generation, but its current ratio remained "
-    "below 1.0 and operating expenses continued to grow faster than revenue. CrowdStrike maintained strong "
-    "revenue growth and positive operating cash flow, but increasing operating expenses and declining net "
-    "income margins indicate growing pressure on profitability.\n\n"
-    "The analysis demonstrates that revenue growth alone does not provide a complete view of business "
-    "performance. Evaluating growth alongside profitability, operating efficiency, cash generation, and "
-    "financial health provides a more complete picture of how a company is performing and where management "
-    "attention may be needed."
+    "NVIDIA's FY2025 average rank was 1.222 and Microsoft's was 3.111. "
+    "A lower average rank is stronger, and the rank is context rather than a single verdict. "
+    "NVIDIA's FY2026 revenue growth of 65.5% is slower than 114.2% in FY2025, and revenue is still rising. "
+    "Gross margin fell from 75.0% in FY2025 to 71.1% in FY2026, while the operating margin was still 60.4% "
+    "and the operating-cash-flow margin was 47.6%. "
+    "Microsoft's revenue growth was 17.8% in FY2026, up from 14.9% in FY2025. "
+    "Gross margin eased from 68.8% to 67.9%, while the operating margin rose from 45.6% to 46.8% "
+    "and the operating-cash-flow margin rose from 48.3% to 55.1%.\n\n"
+    "AMD and Adobe each have an FY2025 average rank of 3.889, with different latest-year patterns. "
+    "AMD's revenue growth accelerated from 13.7% in FY2024 to 34.3% in FY2025, the operating margin rose "
+    "from 7.4% to 10.7%, and operating cash flow grew 153.5%. Liabilities-to-assets rose from 16.8% to 18.1%, "
+    "using imputed liabilities. Adobe's operating margin rose from 31.3% in FY2024 to 36.6% in FY2025 "
+    "and operating expenses fell from 57.7% of revenue to 52.6%, while the current ratio fell from 1.068 "
+    "to 0.996 and debt-to-equity rose from 0.399 to 0.534.\n\n"
+    "Apple's FY2025 revenue growth was 6.4%. Net income grew 19.5%, from $93.7 billion in FY2024 to "
+    "$112.0 billion in FY2025, while operating cash flow fell 5.7% and cash conversion fell from 1.262 to 0.995. "
+    "Debt-to-equity fell from 1.70 to 1.23, and the current ratio was 0.893. "
+    "FY2025 average-balance ROE was 171.4%, inflated by buybacks that shrink equity. "
+    "Apple's FY2025 average rank was 4.000. In that year it ranked 6th on revenue growth and 1st on ROE.\n\n"
+    "CrowdStrike's revenue is still growing, at 21.7% in FY2026 after 29.4% in FY2025 and 36.3% in FY2024. "
+    "Gross margin was 74.7% in FY2026. The operating margin moved from -0.6% in FY2024 to -6.1% in FY2026, "
+    "and operating expenses rose from 75.8% of revenue to 80.8%. Operating cash flow stayed positive, "
+    "with a FY2026 margin of 33.5%. Its FY2025 average rank was 4.889.\n\n"
+    "Slower growth is not falling revenue. NVIDIA and CrowdStrike both grew more slowly in the latest year "
+    "and still grew. The sharper differences are elsewhere. Microsoft's gross margin eased while its operating "
+    "margin and operating cash flow improved. Apple's earnings rose while operating cash flow fell. "
+    "Adobe's margins improved while its current ratio slipped below 1 and leverage rose. "
+    "CrowdStrike's gross margin held near 75% while the operating margin became more negative and operating "
+    "cash flow stayed positive."
 )
 
 PEER = (
-    "NVIDIA and Microsoft demonstrate stronger overall performance across several operating and financial "
-    "indicators, while CrowdStrike shows stronger growth but greater pressure on profitability and operating "
-    "costs. AMD’s recent results show accelerating growth and improving cash generation. Adobe remains highly "
-    "profitable with a liquidity signal to monitor. Apple remains profitable and cash-generative, with tighter "
-    "short-term liquidity and operating expenses growing faster than revenue."
+    "The FY2025 average rank compares the six companies on nine metrics. "
+    "A lower average is stronger on those metrics. NVIDIA's average rank was 1.222 and CrowdStrike's was 4.889. "
+    "AMD and Adobe tied at 3.889. "
+    "These companies operate in different technology subsectors and do not share one business model. "
+    "The average is a descriptive comparison, not a ranking of which company is best."
 )
 
 ALERTS = [
     {
-        "company": "CrowdStrike",
-        "area": "Operating Efficiency",
-        "kind": "investigate",
-        "signal": "Operating expenses reached 80.8% of revenue in 2026.",
-        "why": "Operating expenses are growing faster than revenue, creating increasing pressure on profitability.",
-        "attention": "Management should investigate the factors contributing to the increase in operating costs and monitor whether the trend continues.",
-    },
-    {
-        "company": "CrowdStrike",
-        "area": "Profitability",
-        "kind": "investigate",
-        "signal": "Net income margin declined from 2.4% in 2024 to -0.4% in 2025 and -3.4% in 2026.",
-        "why": "The decline sits alongside weaker operating margins, so reported growth is not translating into earnings.",
-        "attention": "Follow up on what is driving operating losses and whether the margin path continues to deteriorate.",
-    },
-    {
-        "company": "Adobe",
-        "area": "Financial Health",
-        "kind": "monitor",
-        "signal": "Current ratio fell from 1.068 to 0.996 in 2025, while debt-to-equity and liabilities-to-assets increased.",
-        "why": "A reading slightly below 1.0 is a short-term liquidity signal, not automatically a crisis. Leverage is also rising.",
-        "attention": "Monitor current assets and liabilities to prevent further deterioration in short-term liquidity.",
-    },
-    {
-        "company": "Apple",
-        "area": "Financial Health",
-        "kind": "mixed",
-        "signal": "Debt-to-equity declined from 1.70 to 1.23, while the current ratio remained below 1.0 (about 0.87 to 0.89).",
-        "why": "This is improving leverage with tighter liquidity — not a finding that Apple is simply financially weak.",
-        "attention": "Monitor current assets and short-term liabilities so the current ratio does not continue to decline.",
-    },
-    {
-        "company": "Apple",
-        "area": "Operations",
-        "kind": "monitor",
-        "signal": "Operating expenses grew 1.7 percentage points faster than revenue in 2025, while opex stayed near 15% of revenue.",
-        "why": "Cost growth ahead of revenue can pressure margins if it persists, even when the opex ratio is still low.",
-        "attention": "Watch whether operating-expense growth continues to outpace revenue.",
-    },
-    {
-        "company": "AMD",
-        "area": "Growth & Cash",
-        "kind": "positive",
-        "signal": "Revenue growth accelerated and operating cash flow strengthened (OCF margin 22.3% in 2025).",
-        "why": "The recent trend is favorable; the open question is durability as the company scales.",
-        "attention": "Continue monitoring whether the favorable growth, efficiency, and cash-generation trend is maintained.",
-    },
-    {
         "company": "Microsoft",
-        "area": "Financial Health",
-        "kind": "positive",
-        "signal": "Debt-to-equity declined from 0.167 in 2024 to 0.091 in 2026; liabilities-to-assets declined from 0.476 to 0.417; current ratio stayed above 1.0.",
-        "why": "Leverage and liquidity trends are favorable.",
-        "attention": "Continue monitoring whether the favorable leverage and liquidity trends are maintained.",
+        "area": "Profitability",
+        "kind": "mixed",
+        "signal": (
+            "Gross margin eased from 68.8% in FY2025 to 67.9% in FY2026. "
+            "The operating margin rose from 45.6% to 46.8%, and operating expenses fell from 23.2% of revenue to 21.2%. "
+            "Operating cash flow grew 34.4%, and the operating-cash-flow margin rose from 48.3% to 55.1%."
+        ),
+        "trend": "Operating profit and operating cash flow are improving. Gross margin is not.",
+        "why": (
+            "The higher operating margin depends on the lower expense ratio, not on a higher gross margin."
+        ),
+        "attention": (
+            "Investigate what moved gross margin down in FY2026 and whether the lower expense ratio is what offset it. "
+            "The results do not establish that cause."
+        ),
+    },
+    {
+        "company": "Apple",
+        "area": "Cash Flow",
+        "kind": "investigate",
+        "signal": (
+            "Net income grew 19.5% in FY2025, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%. "
+            "The operating-cash-flow margin fell from 30.2% to 26.8%, and cash conversion fell from 1.262 to 0.995. "
+            "The current ratio rose from 0.867 to 0.893 and stayed below 1. Debt-to-equity improved from 1.70 to 1.23."
+        ),
+        "trend": "Earnings and leverage improved. Operating cash flow weakened.",
+        "why": "Reported earnings and cash generation moved in opposite directions in the same year.",
+        "attention": (
+            "Investigate the gap between FY2025 net-income growth and the decline in operating cash flow, "
+            "and what leaves the current ratio below 1. The results do not establish the cause."
+        ),
     },
     {
         "company": "NVIDIA",
         "area": "Growth",
         "kind": "mixed",
-        "signal": "Revenue growth declined from 114% to 65%, while profitability and operating cash flow remain strong.",
-        "why": "This is normalization from an exceptionally high prior-year growth rate, not a decline in revenue.",
-        "attention": "Monitor whether NVIDIA can maintain strong profitability and cash generation as growth moderates.",
+        "signal": (
+            "Revenue grew 65.5% in FY2026. The growth rate was 48.7 percentage points lower than the 114.2% rate in FY2025. "
+            "That is slower growth, not a decline in revenue. Gross margin fell from 75.0% to 71.1%. "
+            "The operating margin was 60.4%, and the operating-cash-flow margin was 47.6%, with operating cash flow up 60.3%."
+        ),
+        "trend": "Revenue growth is decelerating, and gross margin is lower than in FY2025. Operating profit and operating cash flow are still strong.",
+        "why": "Gross margin is already lower than in FY2025. Operating profit and operating cash flow are still strong.",
+        "attention": (
+            "Investigate whether the gross margin, the operating margin, and the operating-cash-flow margin hold "
+            "if revenue growth continues to cool. The results do not show that those margins will fall further."
+        ),
+    },
+    {
+        "company": "Adobe",
+        "area": "Financial Health",
+        "kind": "mixed",
+        "signal": (
+            "The operating margin rose from 31.3% in FY2024 to 36.6% in FY2025, and the operating-cash-flow margin "
+            "rose from 37.5% to 42.2%. Operating expenses fell from 57.7% of revenue to 52.6%. "
+            "The current ratio fell from 1.068 to 0.996, debt-to-equity rose from 0.399 to 0.534, "
+            "and liabilities-to-assets rose from 53.3% to 60.6%."
+        ),
+        "trend": "Profit and operating cash flow are improving. Liquidity and leverage are deteriorating.",
+        "why": "A current ratio slightly below 1.0 is a liquidity signal, not by itself a crisis. Leverage rose in the same year.",
+        "attention": (
+            "Investigate what changed in current assets, current liabilities, and debt. "
+            "The results do not establish the cause."
+        ),
+    },
+    {
+        "company": "AMD",
+        "area": "Financial Health",
+        "kind": "mixed",
+        "signal": (
+            "Revenue growth accelerated from 13.7% in FY2024 to 34.3% in FY2025. "
+            "The operating margin rose from 7.4% to 10.7%, the operating-cash-flow margin rose from 11.8% to 22.3%, "
+            "and average-balance ROA rose from 2.4% to 5.9%. Liabilities-to-assets rose from 16.8% to 18.1%."
+        ),
+        "trend": "Growth, margins, operating cash flow, and returns are improving. Liabilities-to-assets moved the other way, from a low base.",
+        "why": (
+            "The liabilities-to-assets ratio uses assets minus equity, because AMD does not report total liabilities. "
+            "Operating profitability and returns improved, and at 10.7% and 5.9% they are still below the other profitable companies in this set."
+        ),
+        "attention": (
+            "Investigate what accompanied the FY2025 acceleration, including the rise in liabilities-to-assets. "
+            "The results do not establish the cause of that rise."
+        ),
+    },
+    {
+        "company": "CrowdStrike",
+        "area": "Operations",
+        "kind": "investigate",
+        "signal": (
+            "Operating expenses rose from 75.8% of revenue in FY2024 to 77.9% in FY2025 and 80.8% in FY2026. "
+            "In FY2026, operating-expense growth exceeded revenue growth by 4.5 percentage points. "
+            "The operating margin went from -0.6% in FY2024 to -6.1% in FY2026. "
+            "Revenue still grew 21.7%. Operating cash flow stayed positive, and the operating-cash-flow margin eased from 34.9% to 33.5%."
+        ),
+        "trend": "Revenue growth is slowing and still positive. Profitability is deteriorating. Operating cash flow stayed positive.",
+        "why": "This is not a finding that operating cash flow turned negative. The operating loss is wider because costs took a larger share of revenue.",
+        "attention": (
+            "Investigate which operating costs grew faster than revenue. "
+            "The results do not name those costs or establish why the gap opened."
+        ),
     },
 ]
 

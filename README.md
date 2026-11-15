@@ -2,7 +2,9 @@
 
 Interactive review of operating performance for six technology companies: Microsoft, Apple, NVIDIA, Adobe, AMD, and CrowdStrike.
 
-The project compares growth, profitability, operating efficiency, cash generation, and financial health, and flags items that may warrant management attention. The numbers come from SEC annual filings, prepared in Python and calculated with SQL. It is not a trading or investment tool.
+This is an end-to-end business performance analytics project using real SEC financial data. It compares growth, profitability, operating efficiency, cash generation, and financial health for six technology companies, and records where management attention should go. The numbers come from annual filings, prepared in Python and calculated with SQL. It is not a trading tool, a valuation model, or an investment recommendation.
+
+AI-assisted development tools were used to support coding, debugging, and documentation. Project direction, analytical scope, metric selection, data validation, and interpretation were reviewed and guided throughout development.
 
 Open the app: [Business Performance Analytics](https://business-performance-analytics-platform-bus97yysmxxf9p6kixffdi.streamlit.app/)
 

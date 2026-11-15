@@ -363,7 +363,7 @@ def show_table(frame: pd.DataFrame, columns: list[str]) -> None:
             fmt[label] = "{:.3f}"
         elif src == "Rank" or src.endswith("_Rank"):
             fmt[label] = "{:.0f}"
-    st.dataframe(show.style.format(fmt, na_rep="—"), use_container_width=True, hide_index=True)
+    st.dataframe(show.style.format(fmt, na_rep="—"), hide_index=True, width="stretch")
 
 
 def line_chart(frame: pd.DataFrame, y: str, title: str, percent: bool = False) -> None:
@@ -385,7 +385,7 @@ def line_chart(frame: pd.DataFrame, y: str, title: str, percent: bool = False) -
     fig.update_layout(**CHART_LAYOUT)
     fig.update_xaxes(dtick=1, title="Fiscal Year")
     fig.update_yaxes(title=COLUMN_LABELS.get(y, y))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def bar_chart(
@@ -421,7 +421,7 @@ def bar_chart(
         fig.update_traces(texttemplate="%{y:.2f}", textposition="outside", cliponaxis=False)
     fig.update_yaxes(title=COLUMN_LABELS.get(y, y))
     fig.update_xaxes(title=COLUMN_LABELS.get(x, x))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def metric_chart(frame: pd.DataFrame, y: str, title: str, percent: bool = False, year_label: str = "All") -> None:

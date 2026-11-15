@@ -54,6 +54,10 @@ def test_notebook_sql_documents_rank_and_threshold_rules():
     assert "ON p.Company = pb.Company" in summary_sql
     assert "p.Fiscal_Year = pb.Fiscal_Year" not in summary_sql
     assert "FY2025_Average_Rank" in summary_sql
+    assert "both growth rates at full precision" in performance_sql
+    assert "((b.Revenue - b.Prior_Revenue) / NULLIF(b.Prior_Revenue, 0))" in performance_sql
+    assert "- ((b.Operating_Expenses - b.Prior_Opex) / NULLIF(b.Prior_Opex, 0))" in performance_sql
+    assert "gt.Growth_Rate -" not in performance_sql
 
 
 def test_repo_does_not_use_duckdb():

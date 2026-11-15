@@ -66,7 +66,7 @@ def render_notebook(path: Path) -> None:
         for output in cell.get("outputs", []):
             table = _databricks_table(output)
             if table is not None and not table.empty:
-                st.dataframe(table, use_container_width=True, hide_index=True)
+                st.dataframe(table, hide_index=True, width="stretch")
                 continue
             text = _join_text(output.get("text"))
             if text.strip():

@@ -318,9 +318,9 @@ def maybe_show_table(frame: pd.DataFrame, columns: list[str], company: str, year
 
 def kpi_value(frame: pd.DataFrame, col: str, kind: str) -> str:
     series = frame[col].dropna() if col in frame.columns else pd.Series(dtype=float)
-    if series.empty:
+    if len(series) != 1:
         return "—"
-    value = series.median() if len(series) > 1 else series.iloc[0]
+    value = series.iloc[0]
     if kind == "pct":
         return fmt_pct(value)
     if kind == "money":
@@ -554,7 +554,7 @@ def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: st
         year_label,
     )
     kpi_frame = kpi_source(views, company, year_label)
-    render_kpis(
+    render_overview_kpis(
         kpi_frame,
         [
             "Revenue Growth",
@@ -562,6 +562,7 @@ def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: st
             "Operating Expense / Revenue",
             "Revenue Growth − OpEx Growth",
         ],
+        year_label,
     )
     st.caption(
         "Revenue growth − operating expense growth is a percentage-point difference, not an efficiency percentage."
@@ -583,7 +584,7 @@ def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: st
                 year_label=year_label,
             )
     show_company_read(notes.OPERATIONS, company, year_label)
-    maybe_show_table(
+    show_table(
         data,
         [
             "Company",
@@ -594,8 +595,6 @@ def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: st
             "Operating_Expense_to_Revenue",
             "Revenue_Growth_Minus_Opex_Growth",
         ],
-        company,
-        year_label,
     )
 
 
@@ -611,7 +610,7 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
         ),
         year_label,
     )
-    render_kpis(kpi_source(views, company, year_label), KPI_GROUPS["Profitability"])
+    render_overview_kpis(kpi_source(views, company, year_label), KPI_GROUPS["Profitability"], year_label)
     if not is_single_snapshot(company, year_label):
         c1, c2 = st.columns(2)
         with c1:
@@ -621,7 +620,7 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
             metric_chart(data, "Operating_Margin_pct", "Operating margin trend", percent=True, year_label=year_label)
             metric_chart(data, "Net_Income_Growth", "Net income growth", percent=True, year_label=year_label)
     show_company_read(notes.PROFITABILITY, company, year_label)
-    maybe_show_table(
+    show_table(
         data,
         [
             "Company",
@@ -631,8 +630,6 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
             "Net_Income_Margin_pct",
             "Net_Income_Growth",
         ],
-        company,
-        year_label,
     )
 
 
@@ -646,9 +643,10 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
         slice_company(views["company_cash_flow"], company).sort_values(["Company", "Fiscal_Year"]),
         year_label,
     )
-    render_kpis(
+    render_overview_kpis(
         kpi_source(views, company, year_label),
         ["Operating Cash Flow", "Operating Cash Flow Margin", "Operating Cash Flow Growth"],
+        year_label,
     )
     st.caption(
         "Positive operating cash flow does not automatically mean profitability is strong. "
@@ -696,7 +694,7 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
         slice_company(views["company_financial_health"], company).sort_values(["Company", "Fiscal_Year"]),
         year_label,
     )
-    render_kpis(
+    render_overview_kpis(
         kpi_source(views, company, year_label),
         [
             "Current Ratio",
@@ -705,14 +703,14 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
             "ROA (average assets)",
             "ROE (average equity)",
         ],
+        year_label,
     )
     st.caption(glossary_notes.ROA_ROE_NOTE)
     st.caption(glossary_notes.APPLE_ROE_CAVEAT)
     st.caption(glossary_notes.AMD_LIABILITIES_NOTE)
     st.caption(glossary_notes.CROWDSTRIKE_DEBT_NOTE)
     st.caption(
-        "A current ratio below 1.0 is a signal that may warrant attention, not automatically a financial crisis. "
-        "Written notes that cite 65.3% and 58.1% are ending-balance ROA."
+        "A current ratio below 1.0 is a signal that may warrant attention, not automatically a financial crisis."
     )
     if not is_single_snapshot(company, year_label):
         c1, c2 = st.columns(2)
@@ -734,7 +732,7 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
             for row in ending.sort_values(["Company", "Fiscal_Year"]).itertuples(index=False)
         )
         st.caption(f"Ending balance used because there is no prior year: {flagged}.")
-    maybe_show_table(
+    show_table(
         data,
         [
             "Company",
@@ -752,8 +750,6 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
             "Short_Term_Debt_Reported",
             "Long_Term_Debt_Reported",
         ],
-        company,
-        year_label,
     )
 
 

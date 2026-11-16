@@ -54,7 +54,7 @@ One row per company-year. Joins `growth_trend` for the rounded growth rate and n
 
 `Revenue_Growth_Minus_Opex_Growth` keeps both growth rates at full precision and rounds only the difference. The Python copy does the same.
 
-The application shows net income growth and operating income growth as `n/m` when the prior-year amount is zero or negative. The calculated columns stay in the view. A percent change is not comparable when the prior year is a loss.
+The application shows net income growth and operating income growth as a percent only when both years are profits. A wider loss is labeled "loss widened," a smaller loss is labeled "loss narrowed," and a move between a profit and a loss, or a prior year of zero, is labeled "not meaningful." The calculated columns stay in the view. CrowdStrike FY2026 net income is a wider loss. The calculated ratio is positive because the prior year was also a loss, and that percent is not displayed.
 
 ### `financial_analytics.analytics.financial_health`
 

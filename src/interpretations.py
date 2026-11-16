@@ -53,7 +53,9 @@ PROFITABILITY = {
         "Gross margin was 75.2% in FY2024, 75.0% in FY2025, and 74.7% in FY2026. "
         "The operating margin went from -0.6% to -2.9% to -6.1%. "
         "The net income margin went from 2.4% to -0.4% to -3.4%. "
-        "Operating and net margins are negative, and both are weaker than in FY2024."
+        "The operating loss widened from $116.4 million to $293.3 million, "
+        "and the net loss widened from $15.2 million to $162.5 million. "
+        "A percent change is not a useful read of either move, because both years are losses."
     ),
     "Microsoft": (
         "Gross margin eased from 68.8% in FY2025 to 67.9% in FY2026. "
@@ -78,7 +80,10 @@ OPERATIONS = {
     ),
     "CrowdStrike": (
         "Operating expenses were 75.8% of revenue in FY2024, 77.9% in FY2025, and 80.8% in FY2026. "
-        "In FY2026, operating-expense growth exceeded revenue growth by 4.5 percentage points."
+        "In FY2026, operating-expense growth exceeded revenue growth by 4.5 percentage points. "
+        "Research and development rose from $1.076 billion to $1.385 billion, "
+        "and general and administrative rose from $481 million to $670 million. Both grew faster than revenue. "
+        "Sales and marketing rose from $1.523 billion to $1.831 billion, or 20.2%, a little slower than revenue."
     ),
     "Microsoft": (
         "Operating expenses were 21.2% of revenue in FY2026, down from 23.2% in FY2025 and 25.1% in FY2024. "
@@ -97,15 +102,26 @@ CASH = {
         "and operating cash flow grew 24.5% in FY2025."
     ),
     "Apple": (
-        "Operating cash flow fell 5.7% in FY2025, the same year net income grew 19.5%. "
+        "Operating cash flow fell 5.7% in FY2025, from $118.3 billion to $111.5 billion, "
+        "the same year net income grew 19.5%. "
         "The operating-cash-flow margin fell from 30.2% in FY2024 to 26.8% in FY2025. "
         "Cash conversion was 0.995, down from 1.262. Both years are meaningful. "
-        "Operating cash flow was about equal to net income in FY2025, after running above it in FY2024."
+        "Receivables rose by $6.4 billion, inventory fell by $1.6 billion, and payables rose by $0.9 billion. "
+        "Together those year-end changes are a net use of about $3.9 billion, versus a net source of about $1.5 billion in FY2024. "
+        "Stock-based compensation rose from $11.7 billion to $12.9 billion, and depreciation and amortization rose from $11.4 billion to $11.7 billion. "
+        "Those add-backs increased, so they do not explain the cash decline. "
+        "Net income plus the two add-backs and the $3.9 billion net use is about $21.2 billion above FY2025 operating cash flow. "
+        "The same sum was within $107 million of operating cash flow in FY2024. "
+        "Year-end balances are not the cash-flow statement, so they do not name the cause."
     ),
     "CrowdStrike": (
-        "Operating cash flow stayed positive. The operating-cash-flow margin was 38.2% in FY2024, "
-        "34.9% in FY2025, and 33.5% in FY2026. Cash conversion is not meaningful because net income is negative. "
-        "The FY2026 net-income growth rate is not a useful read of earnings, because the loss got larger."
+        "Operating cash flow stayed positive and grew 16.7%, to $1.612 billion. "
+        "The operating-cash-flow margin was 38.2% in FY2024, 34.9% in FY2025, and 33.5% in FY2026. "
+        "Cash conversion is not meaningful because net income is negative. "
+        "The net loss widened from $15.2 million to $162.5 million. The calculated growth rate is positive only because both years are losses. "
+        "Stock-based compensation was $1.097 billion, up from $861 million. That is 22.8% of revenue and about 68% of operating cash flow. "
+        "Operating cash flow exceeded net income by $1.775 billion. Stock-based compensation is $1.097 billion of that gap, and about $678 million is still unexplained. "
+        "Depreciation and amortization is missing for CrowdStrike, so it is not part of this comparison and it is not treated as zero."
     ),
     "Microsoft": (
         "Operating cash flow grew 34.4% in FY2026. "
@@ -132,6 +148,10 @@ HEALTH = {
         "A current ratio slightly below 1.0 is a liquidity signal, not by itself a crisis. "
         "Debt-to-equity rose from 0.399 to 0.534, and liabilities-to-assets rose from 53.3% to 60.6%. "
         "Average-balance ROA rose from 18.5% to 23.9%, and average-balance ROE rose from 36.3% to 55.4%. "
+        "Cash fell from $7.6 billion to $5.4 billion, while short-term investments rose from $0.3 billion to $1.2 billion. "
+        "Short-term debt went from $1.5 billion to zero, and long-term debt rose from $4.1 billion to $6.2 billion. "
+        "Current assets fell from $11.2 billion to $10.2 billion, and current liabilities fell from $10.5 billion to $10.2 billion. "
+        "The current ratio slipped below 1 because current assets fell by more. "
         "The FY2025 average rank was 3.889, the same as AMD. That comparison uses FY2025 only."
     ),
     "Apple": (
@@ -188,8 +208,10 @@ EXECUTIVE = {
         "Management Attention": (
             "Operating margin rose from 31.3% to 36.6% because expenses grew 0.9% against revenue growth of 10.5%. "
             "In the same year the current ratio fell from 1.068 to 0.996 and debt-to-equity rose from 0.399 to 0.534. "
+            "Cash fell from $7.6 billion to $5.4 billion, short-term debt went from $1.5 billion to zero, "
+            "and long-term debt rose from $4.1 billion to $6.2 billion. "
             "A current ratio just under 1 is a liquidity signal, not evidence of distress. "
-            "Management should check whether the expense ratio can hold, and review current liabilities, cash, and debt."
+            "Management should check whether the expense ratio can hold, and review the cash decline and the shift into long-term debt."
         ),
     },
     "Apple": {
@@ -199,10 +221,11 @@ EXECUTIVE = {
         "Cash Flow": CASH["Apple"],
         "Financial Health": HEALTH["Apple"],
         "Management Attention": (
-            "Net income grew 19.5% in FY2025, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%. "
-            "Cash conversion fell from 1.262 to 0.995. "
-            "Management should review the bridge from net income to operating cash flow, including working capital and non-cash adjustments. "
-            "The statements do not show which account caused the decline."
+            "Net income grew 19.5% in FY2025, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%, "
+            "from $118.3 billion to $111.5 billion. Cash conversion fell from 1.262 to 0.995. "
+            "Receivables, inventory, and payables moved in different directions, and stock-based compensation and depreciation both increased. "
+            "Those items do not close the gap between net income and operating cash flow. "
+            "Management should use the cash-flow statement's own operating lines before treating the earnings increase as a cash increase."
         ),
     },
     "CrowdStrike": {
@@ -212,10 +235,11 @@ EXECUTIVE = {
         "Cash Flow": CASH["CrowdStrike"],
         "Financial Health": HEALTH["CrowdStrike"],
         "Management Attention": (
-            "The operating loss widened from about $116.4 million to $293.3 million, and the operating margin fell from -2.9% to -6.1%. "
-            "Revenue still grew 21.7%, and operating cash flow stayed positive. "
-            "Positive operating cash flow is not operating profit. "
-            "Management should find which costs grew faster than revenue, and read the cash result next to the operating loss."
+            "The operating loss widened from $116.4 million to $293.3 million, and the net loss widened from $15.2 million to $162.5 million. "
+            "Revenue still grew 21.7%. Research and development and general and administrative grew faster than revenue. "
+            "Sales and marketing grew a little slower. Operating cash flow stayed positive, at $1.612 billion. "
+            "Stock-based compensation was $1.097 billion, about 68% of that cash flow, and it does not explain the whole gap. "
+            "Positive operating cash flow is not GAAP profit."
         ),
     },
     "Microsoft": {
@@ -260,10 +284,13 @@ CONCLUSION = (
     "and the operating margin rose from 31.3% to 36.6%.\n\n"
     "AMD's revenue growth accelerated from 13.7% to 34.3%, the operating margin rose from 7.4% to 10.7%, "
     "and operating cash flow grew 153.5%. That is improvement from a lower profit level. "
-    "Apple's net income grew 19.5%, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7% "
-    "and cash conversion fell from 1.262 to 0.995. "
-    "CrowdStrike is still growing and still producing operating cash flow, and the operating loss widened "
-    "from about $116.4 million to $293.3 million. Positive operating cash flow is not operating profit.\n\n"
+    "Apple's net income grew 19.5%, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%, "
+    "from $118.3 billion to $111.5 billion, and cash conversion fell from 1.262 to 0.995. "
+    "The year-end change in receivables, inventory, and payables, together with higher stock-based compensation and depreciation, "
+    "does not account for that cash decline. "
+    "CrowdStrike is still growing, and the operating loss widened from $116.4 million to $293.3 million. "
+    "Operating cash flow stayed positive. Stock-based compensation of $1.097 billion is a large non-cash expense in that result, "
+    "and it is not the whole difference between the GAAP loss and operating cash flow.\n\n"
     "The FY2025 average ranks, from 1.222 for NVIDIA to 4.889 for CrowdStrike, are context on nine metrics. "
     "They are not the management conclusion. Adobe's profit improved in the same year its current ratio "
     "moved from 1.068 to 0.996. A current ratio just under 1 is a liquidity signal, not evidence of distress. "
@@ -293,17 +320,26 @@ ALERTS = [
         "area": "Earnings and cash",
         "kind": "investigate",
         "signal": (
-            "Net income grew 19.5% in FY2025, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%. "
-            "The operating-cash-flow margin fell from 30.2% to 26.8%, and cash conversion fell from 1.262 to 0.995. "
-            "The current ratio was 0.893."
+            "Net income grew 19.5% in FY2025, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%, "
+            "from $118.3 billion to $111.5 billion. "
+            "Cash conversion fell from 1.262 to 0.995. "
+            "Receivables rose $6.4 billion, inventory fell $1.6 billion, and payables rose $0.9 billion."
         ),
-        "trend": "Earnings improved. Operating cash flow declined. The current ratio stayed below 1.",
-        "why": "A higher net income figure is not the same as more cash from operations. Cash conversion near 1.0 can be reasonable. The issue is that it fell in the year earnings grew.",
+        "trend": "Earnings improved and operating cash flow declined. The working-capital accounts did not move in one direction, and the non-cash add-backs increased.",
+        "why": (
+            "A higher net income figure is not more cash from operations. "
+            "Stock-based compensation rose from $11.7 billion to $12.9 billion, and depreciation and amortization rose from $11.4 billion to $11.7 billion. "
+            "Those increases would support operating cash flow, so they do not explain the decline. "
+            "The combined year-end change in receivables, inventory, and payables is a use of about $3.9 billion. "
+            "Net income plus the two add-backs and that use is still about $21.2 billion above reported operating cash flow. "
+            "Year-end balances are not the cash-flow statement's working-capital lines."
+        ),
         "attention": (
-            "Review the bridge from net income to operating cash flow, including working capital and non-cash adjustments. "
-            "Do not assign the decline to receivables, inventory, or payables until those lines are in hand."
+            "Reconcile net income to operating cash flow with the statement's own operating lines. "
+            "Do not assign the decline to receivables, inventory, payables, stock-based compensation, or depreciation. "
+            "The amounts already in the file do not close the gap."
         ),
-        "monitor": "Net income growth, operating cash flow growth, cash conversion, and the current ratio.",
+        "monitor": "Net income, operating cash flow, cash conversion, receivables, inventory, and payables.",
     },
     {
         "company": "NVIDIA",
@@ -329,13 +365,14 @@ ALERTS = [
         "signal": (
             "Operating margin rose from 31.3% to 36.6%. Operating expenses grew 0.9% against revenue growth of 10.5%, "
             "and fell from 57.7% of revenue to 52.6%. The operating-cash-flow margin rose from 37.5% to 42.2%. "
-            "The current ratio fell from 1.068 to 0.996, and debt-to-equity rose from 0.399 to 0.534."
+            "The current ratio fell from 1.068 to 0.996, and debt-to-equity rose from 0.399 to 0.534. "
+            "Cash fell from $7.6 billion to $5.4 billion. Short-term debt went from $1.5 billion to zero, and long-term debt rose from $4.1 billion to $6.2 billion."
         ),
-        "trend": "Profit and operating cash flow improved. The current ratio slipped below 1 and debt-to-equity rose.",
-        "why": "The operating improvement came from very slow expense growth. A current ratio just under 1.0 is a liquidity signal, not proof of distress.",
+        "trend": "Profit and operating cash flow improved. Cash declined, and debt shifted toward the long-term balance.",
+        "why": "The operating improvement came from very slow expense growth. A current ratio just under 1.0 is a liquidity signal, not proof of distress. Current assets fell by more than current liabilities.",
         "attention": (
-            "Check whether the expense ratio can stay near 52.6% of revenue, and review current liabilities, cash, and debt. "
-            "The ratios show the direction. They do not name the accounts."
+            "Check whether the expense ratio can stay near 52.6% of revenue, and review the cash decline and the larger long-term debt balance. "
+            "The year-end balances show the direction. They do not show the maturity schedule."
         ),
         "monitor": "Operating margin, operating expense / revenue, operating-cash-flow margin, current ratio, and debt-to-equity.",
     },
@@ -361,17 +398,24 @@ ALERTS = [
         "area": "Operating loss",
         "kind": "investigate",
         "signal": (
-            "Operating margin fell from -2.9% to -6.1%. Operating expenses grew 26.2% against revenue growth of 21.7% "
-            "and reached 80.8% of revenue. The operating loss widened from about $116.4 million to $293.3 million. "
-            "Operating cash flow still grew 16.7%, with a margin of 33.5%."
+            "Operating margin fell from -2.9% to -6.1%. The operating loss widened from $116.4 million to $293.3 million, "
+            "and the net loss widened from $15.2 million to $162.5 million. "
+            "Operating expenses grew 26.2% against revenue growth of 21.7% and reached 80.8% of revenue. "
+            "Operating cash flow grew 16.7% to $1.612 billion. Stock-based compensation was $1.097 billion."
         ),
-        "trend": "Revenue is still growing. The operating loss widened. Operating cash flow stayed positive.",
-        "why": "Positive operating cash flow does not mean the company is profitable. GAAP operating income is a loss, and spending grew faster than revenue.",
+        "trend": "Revenue and operating cash flow are still growing. The GAAP loss widened. Research and development and general and administrative grew faster than revenue.",
+        "why": (
+            "Positive operating cash flow does not mean the company is GAAP profitable. Operating income and net income are losses. "
+            "Stock-based compensation is a non-cash expense, so it reduces GAAP earnings without the same cash outflow. "
+            "It was about 68% of operating cash flow. Operating cash flow exceeded net income by $1.775 billion, "
+            "and stock-based compensation is $1.097 billion of that difference, not all of it."
+        ),
         "attention": (
-            "Identify which operating costs grew faster than revenue, and read operating cash flow next to the operating loss. "
-            "Stock-based compensation may be part of the cash-flow bridge. It is not in this dataset, so it is not an established cause."
+            "Review research and development and general and administrative, which grew faster than revenue. "
+            "Read operating cash flow next to the GAAP loss. "
+            "Do not treat stock-based compensation as the only reason cash and earnings differ."
         ),
-        "monitor": "Revenue growth, operating margin, operating expense / revenue, and operating-cash-flow margin.",
+        "monitor": "Revenue growth, operating margin, operating expense / revenue, stock-based compensation, and the operating-cash-flow margin.",
     },
 ]
 

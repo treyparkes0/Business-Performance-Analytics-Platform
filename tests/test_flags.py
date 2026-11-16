@@ -181,19 +181,25 @@ def test_earnings_growth_is_not_meaningful_when_prior_year_is_not_positive(views
     shown = attach_earnings_growth_display(performance, performance)
     crowd = shown.loc[shown["Company"] == "CrowdStrike"].set_index("Fiscal_Year")
     assert crowd.loc[2021, "Net_Income_Growth_Display"] == "—"
-    assert crowd.loc[2022, "Net_Income_Growth_Display"] == "n/m"
-    assert crowd.loc[2024, "Net_Income_Growth_Display"] == "n/m"
-    assert crowd.loc[2026, "Net_Income_Growth_Display"] == "n/m"
-    assert crowd.loc[2025, "Net_Income_Growth_Display"] != "n/m"
+    assert crowd.loc[2022, "Net_Income_Growth_Display"] == "loss widened"
+    assert crowd.loc[2023, "Net_Income_Growth_Display"] == "loss narrowed"
+    assert crowd.loc[2024, "Net_Income_Growth_Display"] == "not meaningful"
+    assert crowd.loc[2025, "Net_Income_Growth_Display"] == "not meaningful"
+    assert crowd.loc[2026, "Net_Income_Growth_Display"] == "loss widened"
+    assert crowd.loc[2026, "Operating_Income_Growth_Display"] == "loss widened"
+    assert pd.isna(crowd.loc[2025, "Net_Income_Growth_Chart"])
     assert pd.isna(crowd.loc[2026, "Net_Income_Growth_Chart"])
     assert crowd.loc[2026, "Net_Income_Growth"] == performance.loc[
         (performance["Company"] == "CrowdStrike") & (performance["Fiscal_Year"] == 2026),
         "Net_Income_Growth",
     ].iloc[0]
+    assert crowd.loc[2026, "Net_Income_Growth"] == 9.662
     apple = shown.loc[(shown["Company"] == "Apple") & (shown["Fiscal_Year"] == 2025)].iloc[0]
     assert apple["Net_Income_Growth_Display"] == "19.5%"
-    assert "CrowdStrike FY2026" in earnings_nm_labels(shown)
-    assert "Apple FY2025" not in earnings_nm_labels(shown)
+    labels = earnings_nm_labels(shown)
+    assert "CrowdStrike FY2026 (loss widened)" in labels
+    assert "CrowdStrike FY2023 (loss narrowed)" in labels
+    assert "Apple FY2025" not in labels
 
 
 def test_latest_peer_year_is_not_mixed(views):

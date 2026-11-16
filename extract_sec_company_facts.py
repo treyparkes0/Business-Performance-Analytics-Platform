@@ -78,7 +78,7 @@ SEC_CONTACT_NAME = "Thomas Parkes"
 SEC_CONTACT_EMAIL = "treyparkespa@gmail.com"
 REQUEST_HEADERS = {
     "User-Agent": (
-        f"Financial Performance Risk Analytics Portfolio "
+        f"Business Performance Analytics Platform "
         f"{SEC_CONTACT_NAME} {SEC_CONTACT_EMAIL}"
     ),
     "Accept-Encoding": "gzip, deflate",

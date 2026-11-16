@@ -239,24 +239,58 @@ def attach_cash_conversion_display(frame: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+EARNINGS_GROWTH_PHRASES = ("loss widened", "loss narrowed", "not meaningful")
+EARNINGS_GROWTH_CAPTION = (
+    "Net income growth and operating income growth are shown as a percent only when both years are profits. "
+    "A wider loss is labeled 'loss widened,' a smaller loss is labeled 'loss narrowed,' "
+    "and a move between a profit and a loss, or a prior year of zero, is labeled 'not meaningful.' "
+    "The calculated ratio is kept and is not plotted."
+)
+
+
+def earnings_change_label(prior, current) -> str | None:
+    """Phrase to show when a percent change would misread a loss or a sign change.
+
+    None means both years are profits, so the percent can be shown. A missing
+    amount also returns None, and the caller shows an em dash when the ratio is null.
+    """
+    if pd.isna(prior) or pd.isna(current):
+        return None
+    if prior > 0 and current > 0:
+        return None
+    if prior < 0 and current < 0:
+        if current < prior:
+            return "loss widened"
+        if current > prior:
+            return "loss narrowed"
+    return "not meaningful"
+
+
 def earnings_growth_flags(performance: pd.DataFrame) -> pd.DataFrame:
-    """A percent change is comparable only when the prior-year earnings are positive."""
+    """Label earnings changes that should not be read as a growth percent."""
     ordered = performance.sort_values(["Company", "Fiscal_Year"], kind="mergesort")
     flags = ordered[["Company", "Fiscal_Year"]].copy()
-    for value_col, flag_col in (
-        ("Net_Income", "Net_Income_Growth_Meaningful"),
-        ("Operating_Income", "Operating_Income_Growth_Meaningful"),
+    for value_col, label_col, flag_col in (
+        ("Net_Income", "Net_Income_Growth_Label", "Net_Income_Growth_Meaningful"),
+        ("Operating_Income", "Operating_Income_Growth_Label", "Operating_Income_Growth_Meaningful"),
     ):
         if value_col not in ordered.columns:
+            flags[label_col] = pd.Series(pd.NA, index=ordered.index, dtype="object")
             flags[flag_col] = pd.Series(pd.NA, index=ordered.index, dtype="boolean")
             continue
         prior = ordered.groupby("Company", sort=False)[value_col].shift(1)
-        flags[flag_col] = prior.gt(0) & ordered[value_col].notna()
+        labels = [
+            earnings_change_label(prior_value, current_value)
+            for prior_value, current_value in zip(prior, ordered[value_col], strict=True)
+        ]
+        flags[label_col] = labels
+        current = ordered[value_col]
+        flags[flag_col] = prior.gt(0) & current.gt(0)
     return flags.reset_index(drop=True)
 
 
 def attach_earnings_growth_display(frame: pd.DataFrame, performance: pd.DataFrame) -> pd.DataFrame:
-    """Show n/m when prior earnings are zero or negative. Keep the calculated ratio."""
+    """Replace a misleading earnings percent with a short label. Keep the calculated ratio."""
     if frame.empty or performance.empty:
         return frame
     flags = earnings_growth_flags(performance)
@@ -264,38 +298,48 @@ def attach_earnings_growth_display(frame: pd.DataFrame, performance: pd.DataFram
     out = frame.drop(columns=[column for column in extra if column in frame.columns], errors="ignore")
     out = out.merge(flags, on=["Company", "Fiscal_Year"], how="left")
     pairs = (
-        ("Net_Income_Growth", "Net_Income_Growth_Meaningful", "Net_Income_Growth_Display"),
-        ("Operating_Income_Growth", "Operating_Income_Growth_Meaningful", "Operating_Income_Growth_Display"),
+        ("Net_Income_Growth", "Net_Income_Growth_Label", "Net_Income_Growth_Meaningful", "Net_Income_Growth_Display"),
+        (
+            "Operating_Income_Growth",
+            "Operating_Income_Growth_Label",
+            "Operating_Income_Growth_Meaningful",
+            "Operating_Income_Growth_Display",
+        ),
     )
-    for growth, flag, display in pairs:
+    for growth, label_col, flag, display in pairs:
         if growth not in out.columns:
             continue
         shown: list[str] = []
         chart: list[object] = []
-        for value, ok in zip(out[growth], out[flag], strict=True):
-            meaningful = bool(ok) if pd.notna(ok) else False
-            if meaningful:
-                shown.append(fmt_pct(value))
-                chart.append(value)
+        meaningful: list[bool] = []
+        for value, label in zip(out[growth], out[label_col], strict=True):
+            phrase = label if isinstance(label, str) and label in EARNINGS_GROWTH_PHRASES else None
+            if phrase is not None:
+                shown.append(phrase)
+                chart.append(pd.NA)
+                meaningful.append(False)
             elif pd.isna(value):
                 shown.append("—")
                 chart.append(pd.NA)
+                meaningful.append(False)
             else:
-                shown.append("n/m")
-                chart.append(pd.NA)
+                shown.append(fmt_pct(value))
+                chart.append(value)
+                meaningful.append(True)
         out[display] = shown
         out[f"{growth}_Chart"] = chart
+        out[flag] = pd.Series(meaningful, index=out.index, dtype="boolean")
     return out
 
 
 def earnings_nm_labels(frame: pd.DataFrame) -> str:
     if frame.empty or "Net_Income_Growth_Display" not in frame.columns:
         return ""
-    nm_rows = frame.loc[frame["Net_Income_Growth_Display"] == "n/m"]
+    nm_rows = frame.loc[frame["Net_Income_Growth_Display"].isin(EARNINGS_GROWTH_PHRASES)]
     if nm_rows.empty:
         return ""
     return ", ".join(
-        f"{row.Company} FY{int(row.Fiscal_Year)}"
+        f"{row.Company} FY{int(row.Fiscal_Year)} ({row.Net_Income_Growth_Display})"
         for row in nm_rows.sort_values(["Company", "Fiscal_Year"]).itertuples(index=False)
     )
 
@@ -529,10 +573,7 @@ def executive_page(views: dict[str, pd.DataFrame], company: str, year_label: str
     if category == "Profitability":
         labeled = earnings_nm_labels(table)
         if labeled:
-            st.caption(
-                "Net income growth and operating income growth are shown as n/m when the prior year "
-                f"was a loss or zero: {labeled}."
-            )
+            st.caption(f"{EARNINGS_GROWTH_CAPTION} {labeled}.")
     if category == "Cash":
         st.caption(glossary_notes.CASH_CONVERSION_NOTE)
         labeled = cash_nm_labels(table)
@@ -695,10 +736,7 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
     render_overview_kpis(kpi_source(views, company, year_label), KPI_GROUPS["Profitability"], year_label)
     labeled = earnings_nm_labels(shown)
     if labeled:
-        st.caption(
-            "Net income growth is n/m when the prior year was a loss or zero. "
-            f"A percent change is not comparable across that sign change: {labeled}."
-        )
+        st.caption(f"{EARNINGS_GROWTH_CAPTION} {labeled}.")
     if not is_single_snapshot(company, year_label):
         c1, c2 = st.columns(2)
         with c1:

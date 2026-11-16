@@ -291,7 +291,9 @@ TERMS: list[dict[str, str | list[str]]] = [
         CALCULATED,
         [VIEW_OVERVIEW, VIEW_PROFITABILITY],
         f"(Operating Income − prior-year Operating Income) / prior-year Operating Income. {PRIOR_CO} {ROUND} "
-        "Shown as n/m when the prior year is zero or negative, because a percent change is not comparable across that sign change.",
+        "The percent is shown only when both years are profits. A wider loss is labeled 'loss widened,' "
+        "a smaller loss is labeled 'loss narrowed,' and a move between a profit and a loss, or a prior year of zero, "
+        "is labeled 'not meaningful.' The calculated ratio is kept.",
     ),
     _term(
         "Net_Income_Growth",
@@ -300,7 +302,10 @@ TERMS: list[dict[str, str | list[str]]] = [
         CALCULATED,
         [VIEW_OVERVIEW, VIEW_PROFITABILITY],
         f"(Net Income − prior-year Net Income) / prior-year Net Income. {PRIOR_CO} {ROUND} "
-        "Shown as n/m when the prior year is zero or negative, because a percent change is not comparable across that sign change.",
+        "The percent is shown only when both years are profits. A wider loss is labeled 'loss widened,' "
+        "a smaller loss is labeled 'loss narrowed,' and a move between a profit and a loss, or a prior year of zero, "
+        "is labeled 'not meaningful.' CrowdStrike FY2026 is a wider loss. The calculated ratio is positive "
+        "because both years are losses, and that percent is not displayed.",
     ),
     _term(
         "Operating_Expense_Growth",

@@ -5,6 +5,7 @@ from decimal import Decimal
 import pandas as pd
 
 from app import PEER_METRICS, fiscal_year_options
+import pytest
 from src.bp_metrics import (
     CASH_FLOW_COLUMNS,
     CONTRACT_KEYS,
@@ -15,7 +16,7 @@ from src.bp_metrics import (
     SOURCE_VIEW_COLUMNS,
     build_views,
 )
-from src.data_source import DATABRICKS_VIEWS, load_views
+from src.data_source import DATABRICKS_VIEWS, DatabricksConnectionError, load_views
 
 
 def _warehouse_cell(value):
@@ -142,6 +143,26 @@ def test_databricks_cursor_matches_local_contract(monkeypatch, views):
         pd.testing.assert_frame_equal(loaded[key], local[key], check_dtype=True, check_exact=False, rtol=1e-6, atol=1e-4)
         assert list(loaded[key].columns) == list(local[key].columns)
         assert list(loaded[key].dtypes.astype(str)) == list(local[key].dtypes.astype(str))
+
+
+def test_databricks_failure_does_not_use_local_files(monkeypatch):
+    monkeypatch.setenv("DATABRICKS_SERVER_HOSTNAME", "warehouse.example.com")
+    monkeypatch.setenv("DATABRICKS_HTTP_PATH", "/sql/warehouses/test")
+    monkeypatch.setenv("DATABRICKS_TOKEN", "test-token")
+
+    def fail_connection():
+        raise RuntimeError("token rejected")
+
+    monkeypatch.setattr("src.data_source._connect_databricks", fail_connection)
+    with pytest.raises(DatabricksConnectionError) as caught:
+        load_views()
+    message = str(caught.value)
+    assert "DATABRICKS_SERVER_HOSTNAME" in message
+    assert "DATABRICKS_HTTP_PATH" in message
+    assert "DATABRICKS_TOKEN" in message
+    assert "connection failed" in message.lower()
+    assert "data/processed/company_financials_wide.csv" in message
+    assert "token rejected" in message
 
 
 def test_loader_does_not_infer_the_imputation_flag(monkeypatch, views):

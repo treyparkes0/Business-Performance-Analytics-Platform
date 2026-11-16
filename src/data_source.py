@@ -35,10 +35,24 @@ def databricks_configured() -> bool:
     )
 
 
+class DatabricksConnectionError(RuntimeError):
+    """The three Databricks variables were set and the warehouse did not load."""
+
+
 def load_views() -> dict[str, pd.DataFrame]:
-    if databricks_configured():
+    if not databricks_configured():
+        return build_views()
+    try:
         return assemble_views(_load_from_databricks())
-    return build_views()
+    except ImportError:
+        raise
+    except Exception as exc:
+        raise DatabricksConnectionError(
+            "DATABRICKS_SERVER_HOSTNAME, DATABRICKS_HTTP_PATH, and DATABRICKS_TOKEN are set. "
+            "The connection failed. Clear those three variables to run the app from "
+            "data/processed/company_financials_wide.csv. "
+            f"{exc}"
+        ) from exc
 
 
 def _connect_databricks():
@@ -46,9 +60,10 @@ def _connect_databricks():
         from databricks import sql
     except ImportError as exc:
         raise ImportError(
-            "Databricks credentials are set, but databricks-sql-connector is not installed. "
-            "Install that package to read the warehouse. The app runs from "
-            "data/processed/company_financials_wide.csv without it."
+            "DATABRICKS_SERVER_HOSTNAME, DATABRICKS_HTTP_PATH, and DATABRICKS_TOKEN are set, "
+            "but databricks-sql-connector is not installed, so the connection failed. "
+            "Install that package, or clear the three variables to run the app from "
+            "data/processed/company_financials_wide.csv."
         ) from exc
 
     return sql.connect(

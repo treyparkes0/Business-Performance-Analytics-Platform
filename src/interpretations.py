@@ -271,30 +271,13 @@ EXECUTIVE = {
 }
 
 CONCLUSION = (
-    "Revenue growth does not settle this comparison. NVIDIA grew 65.5% in FY2026 and CrowdStrike grew 21.7%, "
-    "and both grew more slowly than the year before. Microsoft grew faster, at 17.8%. "
-    "The sharper differences are whether growth is showing up in operating profit, "
-    "whether expenses are growing slower than revenue, and whether earnings and operating cash move together.\n\n"
-    "NVIDIA still converts 60.4% of revenue into operating profit, with operating cash flow up 60.3%, "
-    "even though gross margin fell from 75.0% to 71.1%. "
-    "Microsoft raised its operating margin from 45.6% to 46.8% and its operating-cash-flow margin from 48.3% to 55.1% "
-    "while gross margin eased from 68.8% to 67.9%. The operating-margin gain came from slower expense growth, "
-    "not from a higher gross margin. "
-    "Adobe did the same kind of thing on a smaller growth rate: expenses grew 0.9% against revenue growth of 10.5%, "
-    "and the operating margin rose from 31.3% to 36.6%.\n\n"
-    "AMD's revenue growth accelerated from 13.7% to 34.3%, the operating margin rose from 7.4% to 10.7%, "
-    "and operating cash flow grew 153.5%. That is improvement from a lower profit level. "
-    "Apple's net income grew 19.5%, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%, "
-    "from $118.3 billion to $111.5 billion, and cash conversion fell from 1.262 to 0.995. "
-    "The year-end change in receivables, inventory, and payables, together with higher stock-based compensation and depreciation, "
-    "does not account for that cash decline. "
-    "CrowdStrike is still growing, and the operating loss widened from $116.4 million to $293.3 million. "
-    "Operating cash flow stayed positive. Stock-based compensation of $1.097 billion is a large non-cash expense in that result, "
-    "and it is not the whole difference between the GAAP loss and operating cash flow.\n\n"
+    "Revenue growth alone does not separate these companies. "
+    "The differences are operating margin, whether expenses grew slower than revenue, "
+    "and whether earnings and operating cash moved together.\n\n"
     "The FY2025 average ranks, from 1.222 for NVIDIA to 4.889 for CrowdStrike, are context on nine metrics. "
-    "They are not the management conclusion. Adobe's profit improved in the same year its current ratio "
-    "moved from 1.068 to 0.996. A current ratio just under 1 is a liquidity signal, not evidence of distress. "
-    "The companies also do not share a fiscal calendar, so FY2025 is a common label, not a common set of months."
+    "They are not the management conclusion. "
+    "A current ratio just under 1 is a liquidity signal, not evidence of distress. "
+    "The companies do not share a fiscal calendar, so FY2025 is a common label, not a common set of months."
 )
 
 ALERTS = [

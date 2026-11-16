@@ -22,7 +22,7 @@ from src.bp_metrics import (
     RANK_TIE_RULE,
     rank_values,
 )
-from src.data_source import load_views
+from src.data_source import DatabricksConnectionError, load_views
 from src import glossary as glossary_notes
 from src import interpretations as notes
 from src.notebook_view import render_notebook
@@ -38,6 +38,7 @@ from src.ui import (
     kpi_cards,
     metric_chart,
     page_intro,
+    paired_metric_chart,
     show_data_notes,
     show_table,
 )
@@ -776,19 +777,44 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
     )
     st.caption(
         "Positive operating cash flow does not automatically mean profitability is strong. "
-        "Compare cash trends with net income on this page."
+        "Net income and operating cash flow are shown together."
     )
     st.caption(glossary_notes.FREE_CASH_FLOW_NOTE)
+    growth = views["performance"].loc[:, ["Company", "Fiscal_Year", "Net_Income_Growth"]]
+    compared = data.merge(growth, on=["Company", "Fiscal_Year"], how="left")
+    compared = attach_earnings_growth_display(compared, views["performance"])
+    chart_rows = compared
+    if year_label == "All" and company == "All Companies":
+        chart_rows = latest_year_rows(compared)
+        st.caption(
+            "The comparison uses each company's latest fiscal year. "
+            "Net income growth is left blank when a percent would misread a loss."
+        )
+    else:
+        st.caption("Net income growth is left blank when a percent would misread a loss.")
+    paired_metric_chart(
+        chart_rows,
+        ["Net_Income_Growth_Chart", "Operating_Cash_Flow_Growth"],
+        "Net income growth and operating cash flow growth",
+        percent=True,
+        labels={
+            "Net_Income_Growth_Chart": "Net income growth",
+            "Operating_Cash_Flow_Growth": "Operating cash flow growth",
+        },
+    )
+    paired_metric_chart(
+        chart_rows,
+        ["Net_Income", "Cash_Flow_from_Operating_Activities"],
+        "Net income and operating cash flow",
+        labels={
+            "Net_Income": "Net income",
+            "Cash_Flow_from_Operating_Activities": "Operating cash flow",
+        },
+    )
     if not is_single_snapshot(company, year_label):
-        c1, c2 = st.columns(2)
-        with c1:
-            metric_chart(data, "Cash_Flow_from_Operating_Activities", "Operating cash flow trend", year_label=year_label)
-            metric_chart(data, "Operating_Cash_Flow_Growth", "Operating cash flow growth", percent=True, year_label=year_label)
-        with c2:
-            metric_chart(
-                data, "Operating_Cash_Flow_Margin_pct", "Operating cash flow margin trend", percent=True, year_label=year_label
-            )
-            metric_chart(data, "Net_Income", "Net income (for comparison with cash)", year_label=year_label)
+        metric_chart(
+            data, "Operating_Cash_Flow_Margin_pct", "Operating cash flow margin trend", percent=True, year_label=year_label
+        )
     show_company_read(notes.CASH, company, year_label)
     data = attach_cash_conversion_display(data)
     show_table(
@@ -1040,13 +1066,11 @@ def attention_page(company: str, year_label: str) -> None:
         "One priority for each company, taken from its latest fiscal-year results.",
         "notebook interpretations",
     )
-    if str(year_label) not in {"All", "Latest", "2024", "2025", "2026"}:
-        st.caption("Management attention notes cover FY2024 through FY2026.")
-        return
+    # The fiscal-year selector stays in the sidebar and does not filter these notes.
+    _ = year_label
     st.caption(
-        "These notes cover FY2024 through FY2026 together. "
-        "Choosing one of those years does not hide the others. "
-        + FISCAL_YEAR_NOTE
+        "Each note is that company's latest-year priority. "
+        "The fiscal-year selector does not filter this page."
     )
     alerts = notes.alerts_for(company)
     if not alerts:
@@ -1120,7 +1144,7 @@ def main() -> None:
 
     try:
         views = cached_views()
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, ImportError, DatabricksConnectionError) as exc:
         st.error(str(exc))
         st.stop()
 

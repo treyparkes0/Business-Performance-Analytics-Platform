@@ -67,6 +67,7 @@ COLUMN_LABELS = {
     "Operating_Expense_Growth": "Operating Expense Growth",
     "Operating_Expense_to_Revenue": "Operating Expense / Revenue",
     "Revenue_Growth_Minus_Opex_Growth": "Revenue Growth − Operating Expense Growth",
+    "Net_Income": "Net Income",
     "Cash_Flow_from_Operating_Activities": "Operating Cash Flow",
     "Operating_Cash_Flow_Margin_pct": "OCF Margin",
     "Operating_Cash_Flow_Growth": "OCF Growth",
@@ -424,6 +425,78 @@ def bar_chart(
         fig.update_traces(texttemplate="%{y:.2f}", textposition="outside", cliponaxis=False)
     fig.update_yaxes(title=COLUMN_LABELS.get(y, y))
     fig.update_xaxes(title=COLUMN_LABELS.get(x, x))
+    st.plotly_chart(fig, width="stretch")
+
+
+def _chart_value(value):
+    if value is None or value is pd.NA:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except TypeError:
+        return value
+    return value
+
+
+def paired_metric_chart(
+    frame: pd.DataFrame,
+    columns: list[str],
+    title: str,
+    percent: bool = False,
+    labels: dict[str, str] | None = None,
+) -> None:
+    """Plot several metrics together. A missing value stays blank rather than zero."""
+    present = [column for column in columns if column in frame.columns]
+    names = labels or COLUMN_LABELS
+    if frame.empty or not present:
+        st.info("No rows for the current filters.")
+        return
+    id_vars = [column for column in ("Company", "Fiscal_Year") if column in frame.columns]
+    long = frame.loc[:, id_vars + present].melt(
+        id_vars=id_vars, value_vars=present, var_name="Metric", value_name="Value"
+    )
+    long["Metric"] = long["Metric"].map(lambda column: names.get(column, column))
+    long["Value"] = [_chart_value(value) for value in long["Value"]]
+    one_company = "Company" not in long.columns or long["Company"].nunique() <= 1
+    several_years = "Fiscal_Year" in long.columns and long["Fiscal_Year"].nunique() > 1
+    if one_company and several_years:
+        fig = px.line(
+            long,
+            x="Fiscal_Year",
+            y="Value",
+            color="Metric",
+            markers=True,
+            title=title,
+            color_discrete_sequence=PALETTE,
+        )
+        fig.update_xaxes(dtick=1, title="Fiscal Year")
+    else:
+        if "Fiscal_Year" in long.columns and long["Fiscal_Year"].nunique() > 1:
+            long["Category"] = [
+                f"{company} FY{int(year)}"
+                for company, year in zip(long["Company"], long["Fiscal_Year"], strict=True)
+            ]
+            x_col = "Category"
+        else:
+            x_col = "Company"
+        fig = px.bar(
+            long,
+            x=x_col,
+            y="Value",
+            color="Metric",
+            barmode="group",
+            title=title,
+            color_discrete_sequence=PALETTE,
+        )
+        fig.update_xaxes(title="")
+        if percent:
+            fig.update_traces(texttemplate="%{y:.1%}", textposition="outside", cliponaxis=False)
+    if percent:
+        fig.update_yaxes(tickformat=".1%", title="")
+    else:
+        fig.update_yaxes(title="")
+    fig.update_layout(**CHART_LAYOUT, showlegend=True)
     st.plotly_chart(fig, width="stretch")
 
 

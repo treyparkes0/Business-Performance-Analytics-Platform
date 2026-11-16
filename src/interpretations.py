@@ -173,10 +173,10 @@ EXECUTIVE = {
         "Cash Flow": CASH["AMD"],
         "Financial Health": HEALTH["AMD"],
         "Management Attention": (
-            "Growth, margins, operating cash flow, and returns improved in FY2025. "
-            "Liabilities-to-assets rose from 16.8% to 18.1%, using assets minus equity. "
-            "Investigate what accompanied the acceleration, including that rise. "
-            "The results do not establish the cause."
+            "Revenue growth, operating margin, and operating cash flow all improved in FY2025. "
+            "The operating margin is 10.7%, up from 7.4%, and still well below the other profitable companies in this set. "
+            "Management should see whether growth keeps lifting operating margin, "
+            "and look at expense mix and product-level profit before changing costs."
         ),
     },
     "Adobe": {
@@ -186,10 +186,10 @@ EXECUTIVE = {
         "Cash Flow": CASH["Adobe"],
         "Financial Health": HEALTH["Adobe"],
         "Management Attention": (
-            "Profit and operating cash flow improved in FY2025. Liquidity and leverage moved the other way. "
-            "The current ratio fell from 1.068 to 0.996. "
-            "Investigate what changed in current assets, current liabilities, and debt. "
-            "The results do not establish the cause."
+            "Operating margin rose from 31.3% to 36.6% because expenses grew 0.9% against revenue growth of 10.5%. "
+            "In the same year the current ratio fell from 1.068 to 0.996 and debt-to-equity rose from 0.399 to 0.534. "
+            "A current ratio just under 1 is a liquidity signal, not evidence of distress. "
+            "Management should check whether the expense ratio can hold, and review current liabilities, cash, and debt."
         ),
     },
     "Apple": {
@@ -199,10 +199,10 @@ EXECUTIVE = {
         "Cash Flow": CASH["Apple"],
         "Financial Health": HEALTH["Apple"],
         "Management Attention": (
-            "Net income grew 19.5% in FY2025 while operating cash flow fell 5.7%. "
-            "Debt-to-equity improved, and the current ratio stayed below 1. "
-            "Investigate the gap between earnings growth and the decline in operating cash flow, "
-            "and what leaves the current ratio below 1. The results do not establish the cause."
+            "Net income grew 19.5% in FY2025, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%. "
+            "Cash conversion fell from 1.262 to 0.995. "
+            "Management should review the bridge from net income to operating cash flow, including working capital and non-cash adjustments. "
+            "The statements do not show which account caused the decline."
         ),
     },
     "CrowdStrike": {
@@ -212,10 +212,10 @@ EXECUTIVE = {
         "Cash Flow": CASH["CrowdStrike"],
         "Financial Health": HEALTH["CrowdStrike"],
         "Management Attention": (
-            "Operating expenses reached 80.8% of revenue in FY2026, and the operating margin was -6.1%. "
-            "Revenue was still growing, and operating cash flow stayed positive. "
-            "Investigate which operating costs grew faster than revenue. "
-            "The results do not name those costs."
+            "The operating loss widened from about $116.4 million to $293.3 million, and the operating margin fell from -2.9% to -6.1%. "
+            "Revenue still grew 21.7%, and operating cash flow stayed positive. "
+            "Positive operating cash flow is not operating profit. "
+            "Management should find which costs grew faster than revenue, and read the cash result next to the operating loss."
         ),
     },
     "Microsoft": {
@@ -225,10 +225,10 @@ EXECUTIVE = {
         "Cash Flow": CASH["Microsoft"],
         "Financial Health": HEALTH["Microsoft"],
         "Management Attention": (
-            "Gross margin eased from 68.8% to 67.9% in FY2026, while the operating margin rose from 45.6% to 46.8% "
-            "and operating cash flow grew 34.4%. "
-            "Investigate what moved gross margin down and whether the lower expense ratio offset it. "
-            "The results do not establish that cause."
+            "Operating margin rose from 45.6% to 46.8% and the operating-cash-flow margin rose from 48.3% to 55.1%, "
+            "while gross margin eased from 68.8% to 67.9%. "
+            "The operating-margin gain came from expenses growing slower than revenue, not from a higher gross margin. "
+            "Management should find what moved gross margin and whether the lower expense ratio can continue as the company grows."
         ),
     },
     "NVIDIA": {
@@ -238,157 +238,140 @@ EXECUTIVE = {
         "Cash Flow": CASH["NVIDIA"],
         "Financial Health": HEALTH["NVIDIA"],
         "Management Attention": (
-            "FY2026 revenue growth of 65.5% is slower than 114.2% in FY2025, and revenue is still rising. "
-            "Gross margin fell from 75.0% to 71.1%. Operating profit and operating cash flow are still strong. "
-            "Investigate whether the gross margin, the operating margin, and the operating-cash-flow margin "
-            "hold if revenue growth continues to cool. The results do not show that those margins will fall further."
+            "Revenue grew 65.5% in FY2026, down from 114.2% in FY2025. Revenue is still rising. "
+            "Gross margin fell from 75.0% to 71.1%, and the operating margin was still 60.4%. "
+            "Slower growth is not weaker demand unless volume or price evidence says so. "
+            "Management should judge whether these margins hold as growth becomes less extreme."
         ),
     },
 }
 
 CONCLUSION = (
-    "NVIDIA's FY2025 average rank was 1.222 and Microsoft's was 3.111. "
-    "A lower average rank is stronger, and the rank is context rather than a single verdict. "
-    "NVIDIA's FY2026 revenue growth of 65.5% is slower than 114.2% in FY2025, and revenue is still rising. "
-    "Gross margin fell from 75.0% in FY2025 to 71.1% in FY2026, while the operating margin was still 60.4% "
-    "and the operating-cash-flow margin was 47.6%. "
-    "Microsoft's revenue growth was 17.8% in FY2026, up from 14.9% in FY2025. "
-    "Gross margin eased from 68.8% to 67.9%, while the operating margin rose from 45.6% to 46.8% "
-    "and the operating-cash-flow margin rose from 48.3% to 55.1%.\n\n"
-    "AMD and Adobe each have an FY2025 average rank of 3.889, with different latest-year patterns. "
-    "AMD's revenue growth accelerated from 13.7% in FY2024 to 34.3% in FY2025, the operating margin rose "
-    "from 7.4% to 10.7%, and operating cash flow grew 153.5%. Liabilities-to-assets rose from 16.8% to 18.1%, "
-    "using imputed liabilities. Adobe's operating margin rose from 31.3% in FY2024 to 36.6% in FY2025 "
-    "and operating expenses fell from 57.7% of revenue to 52.6%, while the current ratio fell from 1.068 "
-    "to 0.996 and debt-to-equity rose from 0.399 to 0.534.\n\n"
-    "Apple's FY2025 revenue growth was 6.4%. Net income grew 19.5%, from $93.7 billion in FY2024 to "
-    "$112.0 billion in FY2025, while operating cash flow fell 5.7% and cash conversion fell from 1.262 to 0.995. "
-    "Debt-to-equity fell from 1.70 to 1.23, and the current ratio was 0.893. "
-    "FY2025 average-balance ROE was 171.4%, inflated by buybacks that shrink equity. "
-    "Apple's FY2025 average rank was 4.000. In that year it ranked 6th on revenue growth and 1st on ROE.\n\n"
-    "CrowdStrike's revenue is still growing, at 21.7% in FY2026 after 29.4% in FY2025 and 36.3% in FY2024. "
-    "Gross margin was 74.7% in FY2026. The operating margin moved from -0.6% in FY2024 to -6.1% in FY2026, "
-    "and operating expenses rose from 75.8% of revenue to 80.8%. Operating cash flow stayed positive, "
-    "with a FY2026 margin of 33.5%. Its FY2025 average rank was 4.889.\n\n"
-    "Slower growth is not falling revenue. NVIDIA and CrowdStrike both grew more slowly in the latest year "
-    "and still grew. The sharper differences are elsewhere. Microsoft's gross margin eased while its operating "
-    "margin and operating cash flow improved. Apple's earnings rose while operating cash flow fell. "
-    "Adobe's margins improved while its current ratio slipped below 1 and leverage rose. "
-    "CrowdStrike's gross margin held near 75% while the operating margin became more negative and operating "
-    "cash flow stayed positive."
-)
-
-PEER = (
-    "The FY2025 average rank compares the six companies on nine metrics. "
-    "A lower average is stronger on those metrics. NVIDIA's average rank was 1.222 and CrowdStrike's was 4.889. "
-    "AMD and Adobe tied at 3.889. "
-    "These companies operate in different technology subsectors and do not share one business model. "
-    "The average is a descriptive comparison, not a ranking of which company is best."
+    "Revenue growth does not settle this comparison. NVIDIA grew 65.5% in FY2026 and CrowdStrike grew 21.7%, "
+    "and both grew more slowly than the year before. Microsoft grew faster, at 17.8%. "
+    "The sharper differences are whether growth is showing up in operating profit, "
+    "whether expenses are growing slower than revenue, and whether earnings and operating cash move together.\n\n"
+    "NVIDIA still converts 60.4% of revenue into operating profit, with operating cash flow up 60.3%, "
+    "even though gross margin fell from 75.0% to 71.1%. "
+    "Microsoft raised its operating margin from 45.6% to 46.8% and its operating-cash-flow margin from 48.3% to 55.1% "
+    "while gross margin eased from 68.8% to 67.9%. The operating-margin gain came from slower expense growth, "
+    "not from a higher gross margin. "
+    "Adobe did the same kind of thing on a smaller growth rate: expenses grew 0.9% against revenue growth of 10.5%, "
+    "and the operating margin rose from 31.3% to 36.6%.\n\n"
+    "AMD's revenue growth accelerated from 13.7% to 34.3%, the operating margin rose from 7.4% to 10.7%, "
+    "and operating cash flow grew 153.5%. That is improvement from a lower profit level. "
+    "Apple's net income grew 19.5%, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7% "
+    "and cash conversion fell from 1.262 to 0.995. "
+    "CrowdStrike is still growing and still producing operating cash flow, and the operating loss widened "
+    "from about $116.4 million to $293.3 million. Positive operating cash flow is not operating profit.\n\n"
+    "The FY2025 average ranks, from 1.222 for NVIDIA to 4.889 for CrowdStrike, are context on nine metrics. "
+    "They are not the management conclusion. Adobe's profit improved in the same year its current ratio "
+    "moved from 1.068 to 0.996. A current ratio just under 1 is a liquidity signal, not evidence of distress. "
+    "The companies also do not share a fiscal calendar, so FY2025 is a common label, not a common set of months."
 )
 
 ALERTS = [
     {
         "company": "Microsoft",
-        "area": "Profitability",
+        "area": "Operating efficiency",
         "kind": "mixed",
         "signal": (
-            "Gross margin eased from 68.8% in FY2025 to 67.9% in FY2026. "
-            "The operating margin rose from 45.6% to 46.8%, and operating expenses fell from 23.2% of revenue to 21.2%. "
+            "Revenue growth was 17.8% in FY2026, up from 14.9%. Gross margin eased from 68.8% to 67.9%. "
+            "Operating margin rose from 45.6% to 46.8%, and operating expenses grew 7.4%. "
             "Operating cash flow grew 34.4%, and the operating-cash-flow margin rose from 48.3% to 55.1%."
         ),
-        "trend": "Operating profit and operating cash flow are improving. Gross margin is not.",
-        "why": (
-            "The higher operating margin depends on the lower expense ratio, not on a higher gross margin."
-        ),
+        "trend": "Operating profit and cash generation improved. Gross margin eased.",
+        "why": "The higher operating margin came from expenses growing slower than revenue, not from a higher gross margin.",
         "attention": (
-            "Investigate what moved gross margin down in FY2026 and whether the lower expense ratio is what offset it. "
-            "The results do not establish that cause."
+            "Find what moved gross margin, and whether the lower expense ratio can continue as the company grows. "
+            "The company-year totals do not name the product or cost line."
         ),
+        "monitor": "Gross margin, operating expense / revenue, operating margin, and operating-cash-flow margin.",
     },
     {
         "company": "Apple",
-        "area": "Cash Flow",
+        "area": "Earnings and cash",
         "kind": "investigate",
         "signal": (
             "Net income grew 19.5% in FY2025, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%. "
             "The operating-cash-flow margin fell from 30.2% to 26.8%, and cash conversion fell from 1.262 to 0.995. "
-            "The current ratio rose from 0.867 to 0.893 and stayed below 1. Debt-to-equity improved from 1.70 to 1.23."
+            "The current ratio was 0.893."
         ),
-        "trend": "Earnings and leverage improved. Operating cash flow weakened.",
-        "why": "Reported earnings and cash generation moved in opposite directions in the same year.",
+        "trend": "Earnings improved. Operating cash flow declined. The current ratio stayed below 1.",
+        "why": "A higher net income figure is not the same as more cash from operations. Cash conversion near 1.0 can be reasonable. The issue is that it fell in the year earnings grew.",
         "attention": (
-            "Investigate the gap between FY2025 net-income growth and the decline in operating cash flow, "
-            "and what leaves the current ratio below 1. The results do not establish the cause."
+            "Review the bridge from net income to operating cash flow, including working capital and non-cash adjustments. "
+            "Do not assign the decline to receivables, inventory, or payables until those lines are in hand."
         ),
+        "monitor": "Net income growth, operating cash flow growth, cash conversion, and the current ratio.",
     },
     {
         "company": "NVIDIA",
-        "area": "Growth",
+        "area": "Growth and margins",
         "kind": "mixed",
         "signal": (
-            "Revenue grew 65.5% in FY2026. The growth rate was 48.7 percentage points lower than the 114.2% rate in FY2025. "
-            "That is slower growth, not a decline in revenue. Gross margin fell from 75.0% to 71.1%. "
-            "The operating margin was 60.4%, and the operating-cash-flow margin was 47.6%, with operating cash flow up 60.3%."
+            "Revenue grew 65.5% in FY2026, down from 114.2% in FY2025. That is slower growth, not a decline in revenue. "
+            "Gross margin fell from 75.0% to 71.1%. The operating margin was 60.4%. "
+            "Operating expenses grew 40.7%, and operating cash flow grew 60.3%."
         ),
-        "trend": "Revenue growth is decelerating, and gross margin is lower than in FY2025. Operating profit and operating cash flow are still strong.",
-        "why": "Gross margin is already lower than in FY2025. Operating profit and operating cash flow are still strong.",
+        "trend": "Growth and gross margin cooled from an unusually strong FY2025. Operating profit and operating cash flow are still strong.",
+        "why": "High growth and high margins both eased. Slower growth is not, by itself, evidence of weaker demand.",
         "attention": (
-            "Investigate whether the gross margin, the operating margin, and the operating-cash-flow margin hold "
-            "if revenue growth continues to cool. The results do not show that those margins will fall further."
+            "Judge whether gross margin, operating margin, and the operating-cash-flow margin hold as growth becomes less extreme. "
+            "Compare FY2026 with a more normal growth rate, not only with 114.2%."
         ),
+        "monitor": "Revenue growth, gross margin, operating margin, and operating-cash-flow margin.",
     },
     {
         "company": "Adobe",
-        "area": "Financial Health",
+        "area": "Efficiency and liquidity",
         "kind": "mixed",
         "signal": (
-            "The operating margin rose from 31.3% in FY2024 to 36.6% in FY2025, and the operating-cash-flow margin "
-            "rose from 37.5% to 42.2%. Operating expenses fell from 57.7% of revenue to 52.6%. "
-            "The current ratio fell from 1.068 to 0.996, debt-to-equity rose from 0.399 to 0.534, "
-            "and liabilities-to-assets rose from 53.3% to 60.6%."
+            "Operating margin rose from 31.3% to 36.6%. Operating expenses grew 0.9% against revenue growth of 10.5%, "
+            "and fell from 57.7% of revenue to 52.6%. The operating-cash-flow margin rose from 37.5% to 42.2%. "
+            "The current ratio fell from 1.068 to 0.996, and debt-to-equity rose from 0.399 to 0.534."
         ),
-        "trend": "Profit and operating cash flow are improving. Liquidity and leverage are deteriorating.",
-        "why": "A current ratio slightly below 1.0 is a liquidity signal, not by itself a crisis. Leverage rose in the same year.",
+        "trend": "Profit and operating cash flow improved. The current ratio slipped below 1 and debt-to-equity rose.",
+        "why": "The operating improvement came from very slow expense growth. A current ratio just under 1.0 is a liquidity signal, not proof of distress.",
         "attention": (
-            "Investigate what changed in current assets, current liabilities, and debt. "
-            "The results do not establish the cause."
+            "Check whether the expense ratio can stay near 52.6% of revenue, and review current liabilities, cash, and debt. "
+            "The ratios show the direction. They do not name the accounts."
         ),
+        "monitor": "Operating margin, operating expense / revenue, operating-cash-flow margin, current ratio, and debt-to-equity.",
     },
     {
         "company": "AMD",
-        "area": "Financial Health",
+        "area": "Growth into profit",
         "kind": "mixed",
         "signal": (
-            "Revenue growth accelerated from 13.7% in FY2024 to 34.3% in FY2025. "
-            "The operating margin rose from 7.4% to 10.7%, the operating-cash-flow margin rose from 11.8% to 22.3%, "
-            "and average-balance ROA rose from 2.4% to 5.9%. Liabilities-to-assets rose from 16.8% to 18.1%."
+            "Revenue growth accelerated from 13.7% to 34.3%. Operating margin rose from 7.4% to 10.7%, "
+            "and operating income grew 94.4%. Operating cash flow grew 153.5%, "
+            "and the operating-cash-flow margin rose from 11.8% to 22.3%."
         ),
-        "trend": "Growth, margins, operating cash flow, and returns are improving. Liabilities-to-assets moved the other way, from a low base.",
-        "why": (
-            "The liabilities-to-assets ratio uses assets minus equity, because AMD does not report total liabilities. "
-            "Operating profitability and returns improved, and at 10.7% and 5.9% they are still below the other profitable companies in this set."
-        ),
+        "trend": "Revenue growth, operating margin, and operating cash flow improved. Gross margin was almost flat, 49.4% then 49.5%.",
+        "why": "Faster growth is turning into higher operating profit and cash. A 10.7% operating margin is still well below the other profitable companies in this set.",
         "attention": (
-            "Investigate what accompanied the FY2025 acceleration, including the rise in liabilities-to-assets. "
-            "The results do not establish the cause of that rise."
+            "See whether growth keeps lifting operating margin. "
+            "Look at expense composition and product-level profit before recommending a cost change."
         ),
+        "monitor": "Revenue growth, operating margin, operating expense / revenue, and operating-cash-flow margin.",
     },
     {
         "company": "CrowdStrike",
-        "area": "Operations",
+        "area": "Operating loss",
         "kind": "investigate",
         "signal": (
-            "Operating expenses rose from 75.8% of revenue in FY2024 to 77.9% in FY2025 and 80.8% in FY2026. "
-            "In FY2026, operating-expense growth exceeded revenue growth by 4.5 percentage points. "
-            "The operating margin went from -0.6% in FY2024 to -6.1% in FY2026. "
-            "Revenue still grew 21.7%. Operating cash flow stayed positive, and the operating-cash-flow margin eased from 34.9% to 33.5%."
+            "Operating margin fell from -2.9% to -6.1%. Operating expenses grew 26.2% against revenue growth of 21.7% "
+            "and reached 80.8% of revenue. The operating loss widened from about $116.4 million to $293.3 million. "
+            "Operating cash flow still grew 16.7%, with a margin of 33.5%."
         ),
-        "trend": "Revenue growth is slowing and still positive. Profitability is deteriorating. Operating cash flow stayed positive.",
-        "why": "This is not a finding that operating cash flow turned negative. The operating loss is wider because costs took a larger share of revenue.",
+        "trend": "Revenue is still growing. The operating loss widened. Operating cash flow stayed positive.",
+        "why": "Positive operating cash flow does not mean the company is profitable. GAAP operating income is a loss, and spending grew faster than revenue.",
         "attention": (
-            "Investigate which operating costs grew faster than revenue. "
-            "The results do not name those costs or establish why the gap opened."
+            "Identify which operating costs grew faster than revenue, and read operating cash flow next to the operating loss. "
+            "Stock-based compensation may be part of the cash-flow bridge. It is not in this dataset, so it is not an established cause."
         ),
+        "monitor": "Revenue growth, operating margin, operating expense / revenue, and operating-cash-flow margin.",
     },
 ]
 

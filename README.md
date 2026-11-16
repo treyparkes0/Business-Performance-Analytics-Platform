@@ -61,7 +61,7 @@ flowchart TD
 
 The notebook defines five Databricks SQL views on the warehouse copies of those files. `src/bp_metrics.py` calculates the same views from the local wide file. `src/data_source.py` reads the warehouse when Databricks credentials are set. Otherwise it uses the local files. The Streamlit application uses that loader and does not recalculate the financial formulas itself.
 
-`excel/Business_Performance_Analysis.xlsx` is a separate workbook of the same analytical views. It has an executive dashboard, operating performance, cash flow, financial health, peer benchmarking, company analysis, and a three-year forecast from each company's latest reported year. The notebook findings and the Streamlit application do not use that forecast. The workbook stores its query results inside the file. The CSV folder those queries were built from is not in this repository, so opening the workbook does not require a refresh.
+[excel/Business_Performance_Analysis.xlsx](excel/Business_Performance_Analysis.xlsx) is a separate workbook of the same analytical views. It has an executive dashboard, operating performance, cash flow, financial health, peer benchmarking, company analysis, and a three-year forecast from each company's latest reported year. The dashboard headline cash figure is the operating-cash-flow margin. The notebook findings and the Streamlit application do not use that forecast. The workbook stores its query results inside the file. The CSV folder those queries were built from is not in this repository. Do not refresh the queries. A refresh would fail because those source files are not included.
 
 The formulas, null rules, and accepted gaps are in [docs/sql_metrics.md](docs/sql_metrics.md). Short metric notes are in [docs/validation_summary.md](docs/validation_summary.md).
 
@@ -90,7 +90,7 @@ Detailed formulas are in [docs/sql_metrics.md](docs/sql_metrics.md). The short d
 
 **Growth.** Revenue growth is the change in revenue divided by prior-year revenue. The growth differential is this year's growth rate minus the prior year's rate. Both rates stay at full precision until the difference is rounded to 3 decimals.
 
-**Profitability.** Gross margin, operating margin, and net income margin are the corresponding profit figures divided by revenue.
+**Profitability.** Gross margin, operating margin, and net income margin are the corresponding profit figures divided by revenue. Net income growth and operating income growth are shown as `n/m` when the prior year is zero or negative. A percent change is not comparable across that sign change.
 
 **Operating efficiency.** Operating-expense growth uses the same year-over-year form as revenue growth. Operating expense / revenue is the expense ratio. Revenue growth minus operating-expense growth uses the unrounded growth rates and rounds only the difference. It is a percentage-point gap, not another margin.
 
@@ -100,34 +100,20 @@ Detailed formulas are in [docs/sql_metrics.md](docs/sql_metrics.md). The short d
 
 **Peer benchmarking.** FY2025 ranks nine metrics with equal weight. Higher is better for revenue growth, operating margin, net income margin, operating-cash-flow margin, current ratio, ROA, and ROE. Lower is better for operating expense / revenue and debt-to-equity. Ties share the best rank. Missing values rank last and tie with each other. `Average_Rank` is the mean of the nine ranks. A lower average is stronger on this set. It is a descriptive comparison. These companies are in different technology subsectors and do not share one business model.
 
-## Key findings
+## Management Findings and Business Recommendations
 
-Figures below are the rounded results used in the notebook company analysis.
+The metrics show what changed. This section says why that change matters and what management should look at next. Each company has a different priority. Revenue growth alone does not explain the difference. The full write-up, including the cross-company comparison and the management attention table, is in [Business Performance Analytics.ipynb](<Business Performance Analytics.ipynb>).
 
-**Microsoft, FY2026.** Revenue growth accelerated to 17.8% from 14.9% in FY2025. Gross margin eased from 68.8% to 67.9%, while the operating margin rose from 45.6% to 46.8% and the operating-cash-flow margin rose from 48.3% to 55.1%. Operating cash flow grew 34.4%.
+- **Microsoft, FY2026.** Operating margin rose from 45.6% to 46.8% and the operating-cash-flow margin rose from 48.3% to 55.1%, while gross margin eased from 68.8% to 67.9%. Expenses grew 7.4% against revenue growth of 17.8%. Management should find what moved gross margin and whether that expense efficiency can continue.
+- **NVIDIA, FY2026.** Revenue still grew 65.5%, down from 114.2%, and the operating margin was 60.4%. Slower growth is not a drop in revenue. Management should judge whether these margins hold as growth becomes less extreme.
+- **AMD, FY2025.** Revenue growth accelerated from 13.7% to 34.3%, operating margin rose from 7.4% to 10.7%, and operating cash flow grew 153.5%. The profit level is still comparatively low. Management should see whether growth keeps lifting operating margin before changing costs.
+- **Apple, FY2025.** Net income grew 19.5%, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7% and cash conversion fell from 1.262 to 0.995. Management should review the cash-flow bridge, not treat the earnings increase as a cash increase.
+- **Adobe, FY2025.** Operating margin rose from 31.3% to 36.6% because expenses grew 0.9% against revenue growth of 10.5%. The current ratio fell to 0.996 and debt-to-equity rose from 0.399 to 0.534. A current ratio just under 1 is a liquidity signal, not evidence of distress.
+- **CrowdStrike, FY2026.** Revenue grew 21.7% and operating cash flow stayed positive, while the operating loss widened from about $116.4 million to $293.3 million. Positive operating cash flow is not operating profit. Management should find which costs grew faster than revenue.
 
-**Apple, FY2025.** Revenue growth improved to 6.4% from 2.0% in FY2024. Net income grew 19.5%, from $93.7 billion to $112.0 billion, while operating cash flow fell 5.7%. Cash conversion fell from 1.262 to 0.995. Operating-expense growth exceeded revenue growth by 1.7 percentage points. The current ratio was 0.893.
+Microsoft, Adobe, and AMD turned revenue growth into a higher operating margin because expenses grew more slowly than sales. NVIDIA's margins cooled from a very strong year and remain high. Apple is the case where earnings and operating cash moved apart. CrowdStrike is the case where cash from operations stayed positive through a wider GAAP operating loss.
 
-**NVIDIA, FY2026.** Revenue growth decelerated to 65.5% from 114.2% in FY2025. Revenue was still growing. Gross margin fell from 75.0% to 71.1%. The operating margin was 60.4%, and the operating-cash-flow margin was 47.6%, with operating cash flow up 60.3%.
-
-**Adobe, FY2025.** Revenue growth was 10.5%, compared with 10.8% in FY2024. The operating margin rose from 31.3% to 36.6%, and the operating-cash-flow margin rose from 37.5% to 42.2%. Operating expenses fell from 57.7% of revenue to 52.6%. The current ratio fell from 1.068 to 0.996, and debt-to-equity rose from 0.399 to 0.534.
-
-**AMD, FY2025.** Revenue growth accelerated from 13.7% to 34.3%. The operating margin rose from 7.4% to 10.7%, and operating cash flow grew 153.5%. Average-balance ROA rose from 2.4% to 5.9%. Those returns are improved and still below the other profitable companies in this set. Liabilities-to-assets rose from 16.8% to 18.1%, using imputed liabilities.
-
-**CrowdStrike, FY2026.** Revenue growth slowed from 36.3% in FY2024 to 29.4% in FY2025 and 21.7% in FY2026. Revenue was still growing. The operating margin moved from -0.6% to -6.1%, and the net margin from 2.4% to -3.4%. Operating expenses reached 80.8% of revenue. Operating cash flow stayed positive, with a margin of 33.5%.
-
-On the FY2025 nine-metric average, NVIDIA was 1.222, Microsoft 3.111, AMD and Adobe 3.889, Apple 4.000, and CrowdStrike 4.889. Apple ranked 6th on FY2025 revenue growth and 1st on ROE. The ROE of 171.4% is inflated by buybacks, which shrink equity. Read it next to ROA.
-
-## Management implications
-
-Each company has one attention item. The financial signal says what changed. It does not prove why.
-
-- **Microsoft.** Gross margin eased while the operating margin and operating cash flow improved. The higher operating margin depends on a lower expense ratio, not on a higher gross margin. The question is what moved gross margin down, and whether the expense ratio is what offset it.
-- **Apple.** Earnings and leverage improved in the same year operating cash flow declined, and the current ratio stayed below 1. The question is the gap between net-income growth and operating cash flow.
-- **NVIDIA.** Growth cooled from an unusually high FY2025, and gross margin is lower, while operating profit and operating cash flow are still strong. The question is whether those margins hold if growth continues to cool. The results do not show that they will fall further.
-- **Adobe.** Profitability and operating cash flow improved while the current ratio slipped below 1 and leverage rose. A current ratio slightly below 1 is a liquidity signal, not by itself a crisis.
-- **AMD.** Growth, margins, cash generation, and returns improved. Liabilities-to-assets moved the other way from a low base, using assets minus equity. Operating profitability is still comparatively weaker.
-- **CrowdStrike.** Revenue is still growing and operating cash flow stayed positive. The operating loss widened because costs took a larger share of revenue. The results do not name those costs.
+Recommendations use the historical financial statements in this project. They are not forecasts, and they do not name a cause the statements do not show. Fiscal years do not cover the same months.
 
 ## Application screenshots
 
@@ -144,6 +130,16 @@ The screenshots are from the Streamlit application, using the processed SEC file
 ![Peer Benchmarking, FY2025 revenue-growth ranks](docs/peer_benchmarking.png)
 
 ![Management Attention, Microsoft and Apple](docs/management_attention.png)
+
+## Workbook screenshots
+
+These are from the Excel workbook, with Microsoft selected and the forecast scenario set to base.
+
+![Executive Dashboard, operating cash flow margin](docs/excel_dashboard.png)
+
+![Financial Health, FY2021 ending-balance returns](docs/excel_financial_health.png)
+
+![Financial Forecast, base case and year-3 comparison](docs/excel_forecast.png)
 
 ## Technologies
 

@@ -104,14 +104,16 @@ def test_notebook_structure_has_no_error_outputs():
         "## Data Preparation & Quality",
         "## SQL views",
         "## Peer Benchmarking",
+        "## Executive summary",
+        "## Individual company analysis",
         "### Microsoft — FY2026",
         "### Apple — FY2025",
         "### NVIDIA — FY2026",
         "### Adobe — FY2025",
         "### AMD — FY2025",
         "### CrowdStrike — FY2026",
-        "## Management suggestions",
-        "## Conclusion",
+        "## Cross-company comparison",
+        "## Management attention summary",
     ):
         assert heading in text
     for cell in notebook["cells"]:

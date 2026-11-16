@@ -290,7 +290,8 @@ TERMS: list[dict[str, str | list[str]]] = [
         "Year-over-year change in operating income.",
         CALCULATED,
         [VIEW_OVERVIEW, VIEW_PROFITABILITY],
-        f"(Operating Income − prior-year Operating Income) / prior-year Operating Income. {PRIOR_CO} {ROUND}",
+        f"(Operating Income − prior-year Operating Income) / prior-year Operating Income. {PRIOR_CO} {ROUND} "
+        "Shown as n/m when the prior year is zero or negative, because a percent change is not comparable across that sign change.",
     ),
     _term(
         "Net_Income_Growth",
@@ -298,7 +299,8 @@ TERMS: list[dict[str, str | list[str]]] = [
         "Year-over-year change in net income.",
         CALCULATED,
         [VIEW_OVERVIEW, VIEW_PROFITABILITY],
-        f"(Net Income − prior-year Net Income) / prior-year Net Income. {PRIOR_CO} {ROUND}",
+        f"(Net Income − prior-year Net Income) / prior-year Net Income. {PRIOR_CO} {ROUND} "
+        "Shown as n/m when the prior year is zero or negative, because a percent change is not comparable across that sign change.",
     ),
     _term(
         "Operating_Expense_Growth",

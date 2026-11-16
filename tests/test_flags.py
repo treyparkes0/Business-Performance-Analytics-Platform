@@ -174,6 +174,28 @@ def test_cash_conversion_threshold_and_display(views):
     assert "CrowdStrike FY2025" in cash_nm_labels(displayed)
 
 
+def test_earnings_growth_is_not_meaningful_when_prior_year_is_not_positive(views):
+    from app import attach_earnings_growth_display, earnings_nm_labels
+
+    performance = views["performance"]
+    shown = attach_earnings_growth_display(performance, performance)
+    crowd = shown.loc[shown["Company"] == "CrowdStrike"].set_index("Fiscal_Year")
+    assert crowd.loc[2021, "Net_Income_Growth_Display"] == "—"
+    assert crowd.loc[2022, "Net_Income_Growth_Display"] == "n/m"
+    assert crowd.loc[2024, "Net_Income_Growth_Display"] == "n/m"
+    assert crowd.loc[2026, "Net_Income_Growth_Display"] == "n/m"
+    assert crowd.loc[2025, "Net_Income_Growth_Display"] != "n/m"
+    assert pd.isna(crowd.loc[2026, "Net_Income_Growth_Chart"])
+    assert crowd.loc[2026, "Net_Income_Growth"] == performance.loc[
+        (performance["Company"] == "CrowdStrike") & (performance["Fiscal_Year"] == 2026),
+        "Net_Income_Growth",
+    ].iloc[0]
+    apple = shown.loc[(shown["Company"] == "Apple") & (shown["Fiscal_Year"] == 2025)].iloc[0]
+    assert apple["Net_Income_Growth_Display"] == "19.5%"
+    assert "CrowdStrike FY2026" in earnings_nm_labels(shown)
+    assert "Apple FY2025" not in earnings_nm_labels(shown)
+
+
 def test_latest_peer_year_is_not_mixed(views):
     snapshot, label = peer_snapshot(views["peer_metrics"], "Latest")
     assert snapshot["Fiscal_Year"].nunique() == 1

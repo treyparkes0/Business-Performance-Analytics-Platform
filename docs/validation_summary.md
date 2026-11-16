@@ -4,6 +4,8 @@ Six companies: Microsoft, Apple, NVIDIA, Adobe, AMD, and CrowdStrike. 33 company
 
 ROA and ROE use the average of the current and prior balance. FY2021 uses the ending balance, because there is no prior year, and those six rows are flagged. `ROA_Avg` and `ROE_Avg` are blank in FY2021.
 
+Net income growth and operating income growth are shown as `n/m` when the prior year is zero or negative. CrowdStrike FY2022–FY2024 and FY2026 are `n/m` for net income growth. FY2025 is a percent because FY2024 net income was positive.
+
 Cash conversion is operating cash flow divided by net income, rounded to 3 decimals. It is not meaningful when net income is zero or negative, or when the absolute ratio is greater than 5. All six CrowdStrike years are not meaningful. The FY2025 ratio is -90.659.
 
 CrowdStrike did not report short-term debt. Total debt is the long-term amount, and `Short_Term_Debt_Reported` is false. A reported zero is kept as zero.

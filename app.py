@@ -125,8 +125,8 @@ OVERVIEW_TABLES = {
         "Gross_Margin_pct",
         "Operating_Margin_pct",
         "Net_Income_Margin_pct",
-        "Net_Income_Growth",
-        "Operating_Income_Growth",
+        "Net_Income_Growth_Display",
+        "Operating_Income_Growth_Display",
     ],
     "Operations": [
         "Company",
@@ -239,6 +239,67 @@ def attach_cash_conversion_display(frame: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def earnings_growth_flags(performance: pd.DataFrame) -> pd.DataFrame:
+    """A percent change is comparable only when the prior-year earnings are positive."""
+    ordered = performance.sort_values(["Company", "Fiscal_Year"], kind="mergesort")
+    flags = ordered[["Company", "Fiscal_Year"]].copy()
+    for value_col, flag_col in (
+        ("Net_Income", "Net_Income_Growth_Meaningful"),
+        ("Operating_Income", "Operating_Income_Growth_Meaningful"),
+    ):
+        if value_col not in ordered.columns:
+            flags[flag_col] = pd.Series(pd.NA, index=ordered.index, dtype="boolean")
+            continue
+        prior = ordered.groupby("Company", sort=False)[value_col].shift(1)
+        flags[flag_col] = prior.gt(0) & ordered[value_col].notna()
+    return flags.reset_index(drop=True)
+
+
+def attach_earnings_growth_display(frame: pd.DataFrame, performance: pd.DataFrame) -> pd.DataFrame:
+    """Show n/m when prior earnings are zero or negative. Keep the calculated ratio."""
+    if frame.empty or performance.empty:
+        return frame
+    flags = earnings_growth_flags(performance)
+    extra = [column for column in flags.columns if column not in ("Company", "Fiscal_Year")]
+    out = frame.drop(columns=[column for column in extra if column in frame.columns], errors="ignore")
+    out = out.merge(flags, on=["Company", "Fiscal_Year"], how="left")
+    pairs = (
+        ("Net_Income_Growth", "Net_Income_Growth_Meaningful", "Net_Income_Growth_Display"),
+        ("Operating_Income_Growth", "Operating_Income_Growth_Meaningful", "Operating_Income_Growth_Display"),
+    )
+    for growth, flag, display in pairs:
+        if growth not in out.columns:
+            continue
+        shown: list[str] = []
+        chart: list[object] = []
+        for value, ok in zip(out[growth], out[flag], strict=True):
+            meaningful = bool(ok) if pd.notna(ok) else False
+            if meaningful:
+                shown.append(fmt_pct(value))
+                chart.append(value)
+            elif pd.isna(value):
+                shown.append("—")
+                chart.append(pd.NA)
+            else:
+                shown.append("n/m")
+                chart.append(pd.NA)
+        out[display] = shown
+        out[f"{growth}_Chart"] = chart
+    return out
+
+
+def earnings_nm_labels(frame: pd.DataFrame) -> str:
+    if frame.empty or "Net_Income_Growth_Display" not in frame.columns:
+        return ""
+    nm_rows = frame.loc[frame["Net_Income_Growth_Display"] == "n/m"]
+    if nm_rows.empty:
+        return ""
+    return ", ".join(
+        f"{row.Company} FY{int(row.Fiscal_Year)}"
+        for row in nm_rows.sort_values(["Company", "Fiscal_Year"]).itertuples(index=False)
+    )
+
+
 def cash_nm_labels(frame: pd.DataFrame) -> str:
     if frame.empty or "Cash_Conversion_Display" not in frame.columns:
         return ""
@@ -284,6 +345,7 @@ def overview_source(views: dict[str, pd.DataFrame], category: str, company: str,
         frame = views[key].copy()
     frame = slice_year(slice_company(frame, company), year_label)
     frame = attach_cash_conversion_display(frame)
+    frame = attach_earnings_growth_display(frame, views.get("performance", frame))
     return frame.sort_values(["Company", "Fiscal_Year"])
 
 
@@ -299,6 +361,9 @@ def kpi_source(views: dict[str, pd.DataFrame], company: str, year_label: str) ->
             how="left",
         )
     merged = slice_company(merged, company)
+    performance = views.get("performance")
+    if performance is not None:
+        merged = attach_earnings_growth_display(merged, performance)
     if year_label == "All":
         return merged
     if year_label == "Latest":
@@ -325,6 +390,8 @@ def kpi_value(frame: pd.DataFrame, col: str, kind: str) -> str:
         return fmt_pct(value)
     if kind == "money":
         return fmt_money(value)
+    if kind == "text":
+        return str(value)
     return fmt_ratio(value)
 
 
@@ -404,7 +471,7 @@ def render_kpis(frame: pd.DataFrame, labels: list[str]) -> None:
         "Gross Margin": ("Gross_Margin_pct", "pct"),
         "Operating Margin": ("Operating_Margin_pct", "pct"),
         "Net Income Margin": ("Net_Income_Margin_pct", "pct"),
-        "Net Income Growth": ("Net_Income_Growth", "pct"),
+        "Net Income Growth": ("Net_Income_Growth_Display", "text"),
         "Operating Cash Flow Margin": ("Operating_Cash_Flow_Margin_pct", "pct"),
         "Current Ratio": ("Current_ratio", "ratio"),
         "Debt-to-Equity": ("debt_to_equity_ratio", "ratio"),
@@ -459,6 +526,13 @@ def executive_page(views: dict[str, pd.DataFrame], company: str, year_label: str
     frame = kpi_source(views, company, year_label)
     render_overview_kpis(frame, KPI_GROUPS[category], year_label)
     table = overview_source(views, category, company, year_label)
+    if category == "Profitability":
+        labeled = earnings_nm_labels(table)
+        if labeled:
+            st.caption(
+                "Net income growth and operating income growth are shown as n/m when the prior year "
+                f"was a loss or zero: {labeled}."
+            )
     if category == "Cash":
         st.caption(glossary_notes.CASH_CONVERSION_NOTE)
         labeled = cash_nm_labels(table)
@@ -617,25 +691,32 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
         ),
         year_label,
     )
+    shown = attach_earnings_growth_display(data, views.get("performance", data))
     render_overview_kpis(kpi_source(views, company, year_label), KPI_GROUPS["Profitability"], year_label)
+    labeled = earnings_nm_labels(shown)
+    if labeled:
+        st.caption(
+            "Net income growth is n/m when the prior year was a loss or zero. "
+            f"A percent change is not comparable across that sign change: {labeled}."
+        )
     if not is_single_snapshot(company, year_label):
         c1, c2 = st.columns(2)
         with c1:
-            metric_chart(data, "Gross_Margin_pct", "Gross margin trend", percent=True, year_label=year_label)
-            metric_chart(data, "Net_Income_Margin_pct", "Net income margin trend", percent=True, year_label=year_label)
+            metric_chart(shown, "Gross_Margin_pct", "Gross margin trend", percent=True, year_label=year_label)
+            metric_chart(shown, "Net_Income_Margin_pct", "Net income margin trend", percent=True, year_label=year_label)
         with c2:
-            metric_chart(data, "Operating_Margin_pct", "Operating margin trend", percent=True, year_label=year_label)
-            metric_chart(data, "Net_Income_Growth", "Net income growth", percent=True, year_label=year_label)
+            metric_chart(shown, "Operating_Margin_pct", "Operating margin trend", percent=True, year_label=year_label)
+            metric_chart(shown, "Net_Income_Growth_Chart", "Net income growth", percent=True, year_label=year_label)
     show_company_read(notes.PROFITABILITY, company, year_label)
     show_table(
-        data,
+        shown,
         [
             "Company",
             "Fiscal_Year",
             "Gross_Margin_pct",
             "Operating_Margin_pct",
             "Net_Income_Margin_pct",
-            "Net_Income_Growth",
+            "Net_Income_Growth_Display",
         ],
     )
 
@@ -946,8 +1027,10 @@ def attention_page(company: str, year_label: str) -> None:
               <p>{as_visible_html(alert["why"])}</p>
               <p class="alert-k">Trend</p>
               <p>{as_visible_html(alert["trend"])}</p>
-              <p class="alert-k">Management attention</p>
+              <p class="alert-k">Recommended action</p>
               <p>{as_visible_html(alert["attention"])}</p>
+              <p class="alert-k">What to monitor</p>
+              <p>{as_visible_html(alert["monitor"])}</p>
             </div>
             """,
             unsafe_allow_html=True,

@@ -154,6 +154,7 @@ def test_fcf_is_not_a_lead_kpi_and_each_company_has_one_alert():
         assert alert["why"]
         assert alert["trend"]
         assert alert["attention"]
+        assert alert["monitor"]
         assert "continue monitoring financial performance" not in alert["attention"].lower()
 
 

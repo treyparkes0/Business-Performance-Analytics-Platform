@@ -54,6 +54,8 @@ One row per company-year. Joins `growth_trend` for the rounded growth rate and n
 
 `Revenue_Growth_Minus_Opex_Growth` keeps both growth rates at full precision and rounds only the difference. The Python copy does the same.
 
+The application shows net income growth and operating income growth as `n/m` when the prior-year amount is zero or negative. The calculated columns stay in the view. A percent change is not comparable when the prior year is a loss.
+
 ### `financial_analytics.analytics.financial_health`
 
 One row per company-year. Average returns lag by `Ticker`. In this set each company has one ticker, so that matches a lag by company.

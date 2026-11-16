@@ -52,9 +52,12 @@ flowchart TD
     C --> F[Local Python fallback]
     F --> E
     E --> G[Streamlit application]
-    E --> X[Excel workbook]
+    C --> X[Excel workbook]
+    X --> U[Embedded analytical tables]
+    X --> V[Three-year forecast formulas]
     G --> H[Management findings and recommendations]
-    X --> H
+    U --> H
+    V --> H
 ```
 
 `extract_sec_company_facts.py` calls the SEC Company Facts API, checks the annual facts, and writes the raw extract, the clean long file, and the wide company-year file.
@@ -117,7 +120,11 @@ The historical priorities above come from the statements. They do not name a cau
 
 ### Base-case forecast
 
-The workbook starts at each company's latest reported year and projects three years. The base case holds four latest-year ratios flat: revenue growth, operating margin, operating expenses as a share of revenue, and capex as a share of revenue. Downside and upside, on the hidden Assumptions sheet, add shocks of 5 percentage points of growth, 2 points of operating margin, and 0.10 of cash conversion. The table below is the base case, with those shocks at zero. Operating expenses are not shocked. When cash conversion is meaningful, operating cash flow is net income times that ratio. When it is not, operating cash flow is revenue times the latest operating-cash-flow margin. CrowdStrike uses that margin path. Microsoft's base case holds FY2026 capex at 34.9% of revenue.
+The workbook starts at each company's latest reported year and projects three years. The base case holds four latest-year ratios flat: revenue growth, operating margin, operating expenses as a share of revenue, and capex as a share of revenue. Downside and upside, on the hidden Assumptions sheet, add shocks of 5 percentage points of growth, 2 points of operating margin, and 0.10 of cash conversion. The table below is the base case, with those shocks at zero. Operating expenses are not shocked.
+
+Forecast net income is forecast operating income multiplied by the latest year's net income divided by operating income. That ratio is held flat, and the scenario shocks do not change it. Net income moves in a downside or upside case only because operating income moves with the shocked operating margin. If operating income is missing or zero, net income is forecast revenue multiplied by the latest net margin. All six companies currently use the operating-income ratio. `Financial Forecast!D33:D35` and the year-3 block on `Calc` use this rule.
+
+When cash conversion is meaningful, operating cash flow is that forecast net income times the cash-conversion ratio, including the scenario shock. When it is not, operating cash flow is forecast revenue times the latest operating-cash-flow margin, and forecast net income is not an input. CrowdStrike uses that margin path. Microsoft's base case holds FY2026 capex at 34.9% of revenue.
 
 Dollar amounts are USD billions, in the workbook's two-decimal billions format. Year 3 is FY2029 for Microsoft, NVIDIA, and CrowdStrike, and FY2028 for Apple, Adobe, and AMD.
 

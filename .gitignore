@@ -10,3 +10,4 @@ Thumbs.db
 .DS_Store
 secrets.toml
 .streamlit/secrets.toml
+docs/interview_preparation.md

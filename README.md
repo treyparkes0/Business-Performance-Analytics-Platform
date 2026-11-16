@@ -192,7 +192,6 @@ data/raw/                             Raw SEC extract
 data/processed/                       Clean long file and wide company-year file
 docs/sql_metrics.md                   View formulas and null rules
 docs/validation_summary.md            Short notes on returns, cash conversion, and data gaps
-docs/interview_preparation.md         Questions for explaining the project
 excel/Business_Performance_Analysis.xlsx   Companion workbook: dashboards plus a three-year forecast
 tests/                                Metric, ranking, loader, and notebook checks
 ```

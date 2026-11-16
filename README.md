@@ -197,46 +197,6 @@ excel/Business_Performance_Analysis.xlsx   Companion workbook: dashboards plus a
 tests/                                Metric, ranking, loader, and notebook checks
 ```
 
-## Running the project
-
-Tested with Python 3.13.
-
-```bash
-git clone https://github.com/treyparkes0/Business-Performance-Analytics-Platform.git
-cd Business-Performance-Analytics-Platform
-python -m pip install -r requirements.txt
-python -m streamlit run app.py
-```
-
-The application runs from the processed files when Databricks is not configured. Both of these files need to be present:
-
-- `data/processed/company_financials_wide.csv`
-- `data/processed/sec_company_financials_clean.csv`
-
-The wide file is the calculation source. The clean file is how AMD's liability flag is tied to a missing fact rather than to the accounting identity.
-
-To read the warehouse views instead, set these three environment variables. They can live in a local `.env` file, which is gitignored.
-
-- `DATABRICKS_SERVER_HOSTNAME`
-- `DATABRICKS_HTTP_PATH`
-- `DATABRICKS_TOKEN`
-
-If any of the three is missing or blank, the application builds the views locally and does not connect to Databricks. The local views and the warehouse views use the same formulas. The warehouse path reads views that have already been created in Databricks. Creating or replacing those views is done from `Business Performance Analytics.ipynb`, not from the application.
-
-Refresh the SEC files with:
-
-```bash
-python extract_sec_company_facts.py
-```
-
-The script sends a User-Agent that includes the contact name and email required by the SEC. Confirm those values in `extract_sec_company_facts.py` before running it.
-
-Run the checks with:
-
-```bash
-python -m pytest
-```
-
 ## Limitations
 
 - The companies do not share a fiscal calendar. FY2025 is a common label, not a common set of months. NVIDIA and CrowdStrike end in January. Microsoft ends in June. Apple ends in September. Adobe and AMD end near the calendar year, on 52/53-week dates.

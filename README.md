@@ -1,4 +1,4 @@
-# Business Performance Analytics Platform
+# Business Performance Analytics 
 
 Financial performance analysis of six publicly traded technology companies, built from annual SEC filings.
 

@@ -456,13 +456,6 @@ def company_choices(frame: pd.DataFrame) -> list[str]:
     return ["All Companies"] + ordered_names(frame["Company"].dropna().unique())
 
 
-def finding_for(mapping: dict[str, str], company: str) -> str:
-    if company != "All Companies":
-        return notes.notes_for(mapping, company)
-    parts = [mapping[name] for name in COMPANY_ORDER if name in mapping]
-    return "\n\n".join(parts)
-
-
 def show_attention_line(company: str) -> None:
     if company == "All Companies":
         st.caption("Management attention for each company is on the Management Attention page.")
@@ -475,8 +468,15 @@ def show_attention_line(company: str) -> None:
     st.caption(f"Management attention: {items}. The full note is on Management Attention.")
 
 
-def show_company_read(mapping: dict[str, str], company: str, year_label: str) -> None:
-    show_data_notes(finding_for(mapping, company), year_label)
+def show_company_read(mapping: dict[str, str], company: str, year_label: str, topic: str) -> None:
+    """One labeled read per company, so Operating and Profitability name who they describe."""
+    names = [name for name in COMPANY_ORDER if name in mapping] if company == "All Companies" else [company]
+    for name in names:
+        show_data_notes(
+            mapping.get(name, "No interpretation is recorded for this company."),
+            year_label,
+            heading=f"{name} · {topic}",
+        )
     show_attention_line(company)
 
 
@@ -539,7 +539,8 @@ def render_kpis(frame: pd.DataFrame, labels: list[str]) -> None:
 
 
 def executive_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> None:
-    st.title("Business Performance Overview")
+    scope = "All companies" if company == "All Companies" else company
+    st.title(f"{scope} · Business Performance Overview")
     st.markdown(
         '<p class="subtitle">Cross-company analysis of growth, profitability, '
         "operating efficiency, cash generation, and financial health.</p>",
@@ -558,10 +559,10 @@ def executive_page(views: dict[str, pd.DataFrame], company: str, year_label: str
             render_kpis(lead, LEAD_LABELS)
             finding = notes.EXECUTIVE.get(company, {}).get("Management Attention", "")
             if finding:
-                show_data_notes(finding, "Latest")
+                show_data_notes(finding, "Latest", heading=f"{company} · Management attention")
             show_attention_line(company)
     else:
-        show_data_notes(notes.CONCLUSION, "All")
+        show_data_notes(notes.CONCLUSION, "All", heading="All companies · latest reported year")
         st.caption(
             "The FY2025 average rank is a descriptive comparison. "
             "These companies are in different technology subsectors and do not share one business model. "
@@ -591,6 +592,7 @@ def performance_page(views: dict[str, pd.DataFrame], company: str, year_label: s
         "Company Performance",
         "Evaluate whether the company is growing and whether growth is accelerating or slowing.",
         "company_performance",
+        company,
     )
     data = slice_year(
         slice_company(views["company_performance"], company).sort_values(["Company", "Fiscal_Year"]),
@@ -651,7 +653,7 @@ def performance_page(views: dict[str, pd.DataFrame], company: str, year_label: s
             )
             metric_chart(data, "Net_Income_Margin_pct", "Net income margin trend", percent=True, year_label=year_label)
 
-    show_company_read(notes.GROWTH, company, year_label)
+    show_company_read(notes.GROWTH, company, year_label, "Growth")
     show_table(
         data,
         [
@@ -671,6 +673,7 @@ def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: st
         "Operating Efficiency & Cost Management",
         "Determine whether the company is scaling efficiently.",
         "company_operations",
+        company,
     )
     data = slice_year(
         slice_company(views["company_operations"], company).sort_values(["Company", "Fiscal_Year"]),
@@ -706,7 +709,7 @@ def operations_page(views: dict[str, pd.DataFrame], company: str, year_label: st
                 percent=True,
                 year_label=year_label,
             )
-    show_company_read(notes.OPERATIONS, company, year_label)
+    show_company_read(notes.OPERATIONS, company, year_label, "Operating efficiency")
     show_table(
         data,
         [
@@ -726,6 +729,7 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
         "Profitability",
         "Determine whether revenue is translating into operating and net income.",
         "performance",
+        company,
     )
     data = slice_year(
         slice_company(views.get("performance", views["company_operations"]), company).sort_values(
@@ -746,7 +750,7 @@ def profitability_page(views: dict[str, pd.DataFrame], company: str, year_label:
         with c2:
             metric_chart(shown, "Operating_Margin_pct", "Operating margin trend", percent=True, year_label=year_label)
             metric_chart(shown, "Net_Income_Growth_Chart", "Net income growth", percent=True, year_label=year_label)
-    show_company_read(notes.PROFITABILITY, company, year_label)
+    show_company_read(notes.PROFITABILITY, company, year_label, "Profitability")
     show_table(
         shown,
         [
@@ -765,6 +769,7 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
         "Cash Flow & Cash Conversion",
         "Determine whether business performance is translating into operating cash generation.",
         "company_cash_flow",
+        company,
     )
     data = slice_year(
         slice_company(views["company_cash_flow"], company).sort_values(["Company", "Fiscal_Year"]),
@@ -815,7 +820,7 @@ def cash_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
         metric_chart(
             data, "Operating_Cash_Flow_Margin_pct", "Operating cash flow margin trend", percent=True, year_label=year_label
         )
-    show_company_read(notes.CASH, company, year_label)
+    show_company_read(notes.CASH, company, year_label, "Cash flow")
     data = attach_cash_conversion_display(data)
     show_table(
         data,
@@ -841,6 +846,7 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
         "Financial Health & Risk",
         "Evaluate liquidity, leverage, and financial flexibility.",
         "company_financial_health",
+        company,
     )
     data = slice_year(
         slice_company(views["company_financial_health"], company).sort_values(["Company", "Fiscal_Year"]),
@@ -873,7 +879,7 @@ def health_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -
             metric_chart(data, "debt_to_equity_ratio", "Debt-to-equity trend", year_label=year_label)
             metric_chart(data, "ROA", "ROA (average assets)", percent=True, year_label=year_label)
             metric_chart(data, "ROE", "ROE (average equity)", percent=True, year_label=year_label)
-    show_company_read(notes.HEALTH, company, year_label)
+    show_company_read(notes.HEALTH, company, year_label, "Financial health")
     ending = data.loc[
         data.get("ROA_Uses_Ending_Balance", pd.Series(dtype=bool)).fillna(False)
         | data.get("ROE_Uses_Ending_Balance", pd.Series(dtype=bool)).fillna(False)
@@ -938,6 +944,7 @@ def peer_page(views: dict[str, pd.DataFrame], company: str, year_label: str) -> 
         "Peer Performance Benchmarking",
         "Compare companies against each other on a selected operating or financial metric.",
         "peer_metrics",
+        "All Companies",
     )
     frame = views["peer_metrics"]
     snapshot, year_text = peer_snapshot(frame, year_label)
@@ -1065,6 +1072,7 @@ def attention_page(company: str, year_label: str) -> None:
         "Management Attention",
         "One priority for each company, taken from its latest fiscal-year results.",
         "notebook interpretations",
+        company,
     )
     # The fiscal-year selector stays in the sidebar and does not filter these notes.
     _ = year_label
@@ -1089,7 +1097,7 @@ def attention_page(company: str, year_label: str) -> None:
               <p>{as_visible_html(alert["why"])}</p>
               <p class="alert-k">Trend</p>
               <p>{as_visible_html(alert["trend"])}</p>
-              <p class="alert-k">Recommended action</p>
+              <p class="alert-k">Next look</p>
               <p>{as_visible_html(alert["attention"])}</p>
               <p class="alert-k">What to monitor</p>
               <p>{as_visible_html(alert["monitor"])}</p>

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import html
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -244,7 +246,10 @@ def inject_css() -> None:
                          text-transform: uppercase; color: #1F4E79; margin: 1.2rem 0 0.4rem 0; }
         .company-kpi { font-size: 1rem; font-weight: 700; color: #15233A; margin: 1.15rem 0 0.35rem 0; }
         .interp { background: #FFFFFF; border-left: 3px solid #1F4E79; padding: 0.9rem 1.1rem;
-                  border: 1px solid #E2E6EC; border-left-width: 3px; border-radius: 8px; color: #1A2332; }
+                  border: 1px solid #E2E6EC; border-left-width: 3px; border-radius: 8px; color: #1A2332;
+                  margin-bottom: 0.35rem; }
+        .interp p { margin: 0 0 0.7rem 0; }
+        .interp p:last-child { margin-bottom: 0; }
         .alert { background: #FFFFFF; border: 1px solid #E2E6EC; border-radius: 10px;
                  padding: 1rem 1.1rem; margin-bottom: 0.85rem; }
         .alert-k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: #5B6775; }
@@ -370,10 +375,24 @@ def show_table(frame: pd.DataFrame, columns: list[str]) -> None:
     st.dataframe(show.style.format(fmt, na_rep="—"), hide_index=True, width="stretch")
 
 
+def chart_title(frame: pd.DataFrame, title: str) -> str:
+    """Name the company on a chart that would otherwise only say the metric."""
+    if frame.empty or "Company" not in frame.columns:
+        return title
+    names = frame["Company"].dropna().unique()
+    if len(names) != 1:
+        return title
+    name = str(names[0])
+    if name.lower() in title.lower():
+        return title
+    return f"{name} — {title}"
+
+
 def line_chart(frame: pd.DataFrame, y: str, title: str, percent: bool = False) -> None:
     if frame.empty:
         st.info("No rows for the current filters.")
         return
+    title = chart_title(frame, title)
     color = "Company" if frame["Company"].nunique() > 1 else None
     fig = px.line(
         frame,
@@ -405,6 +424,7 @@ def bar_chart(
     if frame.empty:
         st.info("No rows for the current filters.")
         return
+    title = chart_title(frame, title)
     fig = px.bar(
         frame,
         x=x,
@@ -458,6 +478,7 @@ def paired_metric_chart(
     )
     long["Metric"] = long["Metric"].map(lambda column: names.get(column, column))
     long["Value"] = [_chart_value(value) for value in long["Value"]]
+    title = chart_title(frame, title)
     one_company = "Company" not in long.columns or long["Company"].nunique() <= 1
     several_years = "Fiscal_Year" in long.columns and long["Fiscal_Year"].nunique() > 1
     if one_company and several_years:
@@ -511,25 +532,32 @@ def metric_chart(frame: pd.DataFrame, y: str, title: str, percent: bool = False,
 
 def as_visible_html(text: str) -> str:
     """Keep literal dollar amounts. Streamlit markdown treats $...$ as math."""
-    return text.replace("$", "&#36;")
+    escaped = html.escape(text).replace("$", "&#36;")
+    paragraphs = [part.strip() for part in escaped.split("\n\n") if part.strip()]
+    if not paragraphs:
+        return ""
+    return "".join(f"<p>{part.replace(chr(10), '<br>')}</p>" for part in paragraphs)
 
 
 def interpretation_box(title: str, text: str) -> None:
-    st.markdown(f'<div class="section-label">{title}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="company-kpi">{html.escape(title)}</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="interp">{as_visible_html(text)}</div>', unsafe_allow_html=True)
 
 
 INTERPRETATION_YEARS = {"All", "Latest", "2024", "2025", "2026"}
 
 
-def show_data_notes(text: str, year_label) -> None:
+def show_data_notes(text: str, year_label, heading: str | None = None) -> None:
     if str(year_label) not in INTERPRETATION_YEARS:
         st.caption("The written read covers FY2024 through FY2026.")
         return
-    interpretation_box("FY2024–FY2026", text)
+    interpretation_box(heading or "FY2024–FY2026", text)
 
 
-def page_intro(title: str, purpose: str, view_name: str) -> None:
+def page_intro(title: str, purpose: str, view_name: str, company: str | None = None) -> None:
+    if company:
+        scope = "All companies" if company == "All Companies" else company
+        title = f"{scope} · {title}"
     st.title(title)
     st.markdown(f'<p class="subtitle">{purpose}</p>', unsafe_allow_html=True)
     st.caption(f"Source view: `{view_name}`")
